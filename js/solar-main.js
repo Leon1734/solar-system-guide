@@ -347,6 +347,13 @@ window.addEventListener('resize', function () {
 loadPrefs();
 setSpeed(state.speed);
 const tourParam = applyUrlParams();
+const cosmosParam = parseInt(new URLSearchParams(location.search).get('cosmos') || '0', 10);
+if (cosmosParam >= 1) {
+  setTimeout(function () { if (window.CosmosLab) CosmosLab.goLevel(Math.min(3, cosmosParam)); }, 2600);
+}
+if (new URLSearchParams(location.search).get('zen') === '1') {
+  setTimeout(function () { document.body.classList.add('zen'); const z = document.getElementById('btn-zen'); if (z) z.textContent = '✕ 退出'; }, 1200);
+}
 syncDateInput();
 updatePlayBtn();
 animate();

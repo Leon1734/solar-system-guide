@@ -686,5 +686,33 @@ console.log('\nv22 月亮说明书 + 精确掩星：');
   check('计划本含可见性徽标', cal.indexOf('visIco') > 0 ? 1 : 0, 1, 0);
 }
 
+console.log('\nv23 宇宙之旅 + 沉浸模式 + 线条降噪：');
+{
+  // cosmos.js：三级场景 + 12 个科普标记 + 滚轮级联 + 相机重锚
+  const cs = fs.readFileSync(__dirname + '/../js/cosmos.js', 'utf8');
+  check('cosmos 三级挂载', (cs.match(/function buildL\d\(\)/g) || []).length === 3 ? 1 : 0, 1, 0);
+  const marks = (cs.match(/addMarker\(g, markerSets/g) || []).length;
+  console.log('   宇宙标记 ' + marks + ' 个（太阳系/黑洞/河外星系/类星体…）');
+  check('宇宙标记 >= 10', marks >= 10 ? 1 : 0, 1, 0);
+  check('滚轮级联与重锚', cs.indexOf('goLevel') > 0 && cs.indexOf('wheel') > 0 && cs.indexOf('savedCam') > 0 ? 1 : 0, 1, 0);
+  check('科普卡与标签投影', cs.indexOf('showCard') > 0 && cs.indexOf('cosmos-label') > 0 ? 1 : 0, 1, 0);
+  // HTML/UI 接线
+  const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
+  check('宇宙入口按钮', html.indexOf('btn-cosmos') > 0 ? 1 : 0, 1, 0);
+  check('沉浸按钮与开关', html.indexOf('btn-zen') > 0 && html.indexOf('tg-minor') > 0 ? 1 : 0, 1, 0);
+  const css = fs.readFileSync(__dirname + '/../css/style.css', 'utf8');
+  check('zen 隐藏规则', css.indexOf('body.zen #top-actions') > 0 ? 1 : 0, 1, 0);
+  check('cosmos UI 样式', css.indexOf('#cosmos-card') > 0 && css.indexOf('#cosmos-fade') > 0 ? 1 : 0, 1, 0);
+  // 线条降噪：细轨开关 + 透明度分级 + 状态位
+  const core = fs.readFileSync(__dirname + '/../js/solar-core.js', 'utf8');
+  check('state.minorOrbits 默认关', core.indexOf('minorOrbits: false') > 0 ? 1 : 0, 1, 0);
+  const bod = fs.readFileSync(__dirname + '/../js/solar-bodies.js', 'utf8');
+  check('细轨透明度低于主轨', bod.indexOf('0.16 : 0.30') > 0 ? 1 : 0, 1, 0);
+  const ui2 = fs.readFileSync(__dirname + '/../js/solar-ui.js', 'utf8');
+  check('applyOrbitVis 分级显隐', ui2.indexOf('applyOrbitVis') > 0 && ui2.indexOf('tg-minor') > 0 ? 1 : 0, 1, 0);
+  check('zen 模式与 ESC 退出', ui2.indexOf('setZen') > 0 && ui2.indexOf("CosmosLab.isCosmic()") > 0 ? 1 : 0, 1, 0);
+  check('偏好记忆 minor/zen', ui2.indexOf('minorOrbits: state.minorOrbits') > 0 ? 1 : 0, 1, 0);
+}
+
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

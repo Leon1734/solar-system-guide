@@ -96,7 +96,7 @@ function rebuildOrbits() {
       (b.isProbe ? probeGroup : scene).remove(b.orbitLine);
       b.orbitLine.geometry.dispose();
       b.orbitLine.material.dispose();
-      b.orbitLine = b.isProbe ? buildProbeLine(b) : buildOrbitLine(b.data, b.minor ? 0.22 : 0.38);
+      b.orbitLine = b.isProbe ? buildProbeLine(b) : buildOrbitLine(b.data, b.minor ? 0.16 : 0.30);
     }
   });
   buildHZ(); // 宜居带随距离模式重建
@@ -184,7 +184,7 @@ function buildOrbitingBody(p, minor) {
   body.label = makeLabel((minor ? (cometIcon ? '☄️ ' : rockIcon ? '🪨 ' : '') : '') + p.name);
   addPick(body, group, Math.max(r * 1.7, 1.35));
   makeHighlight(body, group, r);
-  body.orbitLine = buildOrbitLine(p, minor ? 0.22 : 0.38);
+  body.orbitLine = buildOrbitLine(p, minor ? 0.16 : 0.30);
   scene.add(group);
   bodies.push(body);
   return body;

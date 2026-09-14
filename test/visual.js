@@ -32,6 +32,9 @@ const SCENES = [
   { name: 'sky-compass', url: '?view=sky&freeze=1&novx=1' },
   { name: 'moon3d', url: '?view=moon&freeze=1&date=2026-10-26' },
   { name: 'calendar', url: '?view=cal&freeze=1' },
+  { name: 'cosmos-l1', url: '?cosmos=1&freeze=1' },
+  { name: 'cosmos-l3', url: '?cosmos=3&freeze=1' },
+  { name: 'zen-mode', url: '?zen=1&freeze=1' },
   { name: 'en-lang', url: '?freeze=1&lang=en&date=2026-01-01' }
 ];
 

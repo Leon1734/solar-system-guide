@@ -336,9 +336,21 @@ $('speed-slider').addEventListener('input', function () {
   setSpeed(speedFromSlider(+this.value), false);
 });
 
+/* v23.0 轨道分级显隐：大行星轨道随"轨道"开关；矮行星/彗星/卫星/探测器细轨另受"细轨"开关 */
+function applyOrbitVis() {
+  activeList().forEach(function (b) {
+    if (!b.orbitLine || b.isExoStar) return;
+    const minor = b.isProbe || b.isMoonExtra || b.minor;
+    b.orbitLine.visible = state.showOrbits && (!minor || state.minorOrbits);
+  });
+}
 $('tg-orbits').addEventListener('change', function () {
   state.showOrbits = this.checked;
-  activeList().forEach(function (b) { if (b.orbitLine && !(b.isExoStar)) b.orbitLine.visible = state.showOrbits; });
+  applyOrbitVis();
+});
+$('tg-minor').addEventListener('change', function () {
+  state.minorOrbits = this.checked;
+  applyOrbitVis();
 });
 $('tg-labels').addEventListener('change', function () {
   state.showLabels = this.checked;
@@ -362,6 +374,22 @@ $('btn-hz').addEventListener('click', function () {
   if (hzRing) hzRing.visible = state.hz;
   toast(state.hz ? t8('ui.hzOn', '🟢 已显示宜居带——地球正在绿区中央') : t8('ui.hzOff', '已隐藏宜居带'));
   savePrefs();
+});
+
+/* v23.0 沉浸极简模式：一键藏起界面，只留时间/播放/退出 */
+function setZen(on) {
+  state.zen = on;
+  document.body.classList.toggle('zen', on);
+  $('btn-zen').textContent = on ? '✕ 退出' : '🌿 沉浸';
+  if (on) toast(t8('ui.zenOn', '🌿 沉浸模式——ESC 退出'));
+  savePrefs();
+}
+$('btn-zen').addEventListener('click', function () { setZen(!state.zen); });
+/* v23.0 宇宙缩放之旅入口 */
+$('btn-cosmos').addEventListener('click', function () {
+  if (!window.CosmosLab) return;
+  if (CosmosLab.isCosmic()) CosmosLab.exit();
+  else { CosmosLab.enter(); }
 });
 
 function setMode(m) {
@@ -401,7 +429,7 @@ function setSystem(key) {
   exoGroup.visible = goingExo;
   bodies.forEach(function (b) {
     if (b.group && !b.isProbe) b.group.visible = !goingExo;
-    if (b.orbitLine && !b.isProbe) b.orbitLine.visible = !goingExo && state.showOrbits;
+    if (b.orbitLine && !b.isProbe) { const mn = b.isMoonExtra || b.minor; b.orbitLine.visible = !goingExo && state.showOrbits && (!mn || state.minorOrbits); }
   });
   probeGroup.visible = !goingExo && state.showProbes;
   beltPoints.visible = kuiperPoints.visible = trojanPoints.visible = !goingExo && state.showBelt;
@@ -601,7 +629,8 @@ function savePrefs() {
       slider: +$('speed-slider').value,
       showOrbits: state.showOrbits, showLabels: state.showLabels,
       showBelt: state.showBelt, bloom: state.bloom,
-      bgIndex: state.bgIndex, hz: state.hz, constMode: state.constMode, showTrail: state.showTrail
+      bgIndex: state.bgIndex, hz: state.hz, constMode: state.constMode, showTrail: state.showTrail,
+      minorOrbits: state.minorOrbits, zen: state.zen
     }));
   } catch (e) { }
 }
@@ -625,9 +654,12 @@ function loadPrefs() {
       $('btn-trail').classList.remove('active');
       setTrailVisible(false);
     }
+    if (p.minorOrbits === true) { state.minorOrbits = true; $('tg-minor').checked = true; }
+    applyOrbitVis();
+    if (p.zen === true) { state.zen = false; } // 沉浸模式不跨会话自动恢复，避免困惑
   } catch (e) { }
 }
-['tg-orbits', 'tg-labels', 'tg-belt', 'tg-bloom'].forEach(function (id) {
+['tg-orbits', 'tg-labels', 'tg-belt', 'tg-bloom', 'tg-minor'].forEach(function (id) {
   $(id).addEventListener('change', savePrefs);
 });
 $('speed-slider').addEventListener('change', savePrefs);
@@ -697,6 +729,8 @@ window.addEventListener('keydown', function (e) {
     const openModal = MODALS.some(function (id) { return !$(id).classList.contains('hidden'); });
     if (openModal) { closeAllModals(); return; }
     if (window.TourEngine && TourEngine.active()) { TourEngine.exit(); return; }
+    if (window.CosmosLab && CosmosLab.isCosmic()) { CosmosLab.exit(); return; }
+    if (state.zen) { setZen(false); return; }
     if (state.project) { setProject(false); return; }
     if (state.selected) { selectBody(null); stopFollow(); }
     else resetView();

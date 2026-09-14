@@ -1,7 +1,7 @@
 /* 太阳系漫游指南 · Service Worker（离线缓存，仅 http(s) 下生效） */
 'use strict';
 
-const CACHE = 'solar-guide-v24';
+const CACHE = 'solar-guide-v25';
 const ASSETS = [
   './',
   './index.html',
@@ -26,6 +26,7 @@ const ASSETS = [
   './js/constellation.js',
   './js/moonphase.js',
   './js/moon3d.js',
+  './js/cosmos.js',
   './js/calendar.js',
   './js/quizdaily.js',
   './js/sfx.js',

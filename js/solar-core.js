@@ -23,12 +23,14 @@ const state = {
   selected: null,
   distanceMode: 'compressed',
   showOrbits: true,
+  minorOrbits: false,
   showLabels: true,
   showBelt: true,
   showProbes: false,
   bloom: true,
   realTex: false,
   project: false,
+  zen: false,
   bgIndex: 0,
   hz: false,        // v4.0 宜居带叠加层
   showAxis: true,   // v7.5 自转轴虚线（金星/天王星等高倾角行星）
