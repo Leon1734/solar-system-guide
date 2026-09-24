@@ -1,0 +1,18 @@
+{
+  "name": "太阳系漫游指南",
+  "short_name": "太阳系",
+  "description": "基于 NASA/JPL 轨道数据的交互式太阳系三维科普演示",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#02030a",
+  "theme_color": "#0a1020",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

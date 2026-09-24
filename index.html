@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>太阳系漫游指南 · 交互式三维科普演示</title>
+  <meta name="description" content="基于 NASA/JPL 轨道数据的交互式太阳系三维模拟：真实行星位置、开普勒定律演示、漫游课程、系外行星系统">
+  <link rel="stylesheet" href="css/style.css?v=10">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🌞</text></svg>">
+  <link rel="manifest" href="manifest.webmanifest">
+</head>
+<body>
+  <div id="scene-container"></div>
+  <div id="labels"></div>
+
+  <!-- 加载屏（贴图程序化生成约需数秒） -->
+  <div id="loading-screen">
+    <div class="loading-box">
+      <div class="loading-orbit"><span></span></div>
+      <div class="loading-text" id="loading-text">🌞 正在生成太阳系…</div>
+      <div class="loading-sub" id="loading-sub">程序化绘制行星贴图（无需联网）</div>
+    </div>
+  </div>
+
+  <!-- 顶部栏 -->
+  <header id="topbar">
+    <div id="brand">
+      <h1 id="brand-h">🌞 太阳系漫游指南</h1>
+      <p id="brand-p">基于 NASA/JPL 轨道数据的交互式三维科普演示</p>
+    </div>
+    <nav id="top-actions">
+      <button id="btn-tours" class="hot" title="引导式漫游课程（推荐）">🎓 漫游课程</button>
+      <button id="btn-badges" title="我的成就徽章">🏆 成就</button>
+      <button id="btn-transit" title="凌星法：系外行星是这样被发现的">🔭 凌星</button>
+      <button id="btn-meteors" title="流星雨沙盘：地球穿过彗星尘埃带">☄️ 流星雨</button>
+      <button id="btn-sky" title="今晚天空：按真实距角计算可见行星与方位">👁️ 今晚天空</button>
+      <button id="btn-moon" title="月相望远镜：当前真实月相与月面地名">🌙 月相</button>
+      <button id="btn-cal" title="天文日历：30+ 关键天象一键跳转回放">📅 日历</button>
+      <button id="btn-quiz" title="每日一题：随机天文问答，积分累计">🎲 每日一题</button>
+      <button id="btn-starlife" title="观看太阳从星云到白矮星的一生">🌟 恒星一生</button>
+      <button id="btn-compare" title="行星数据对比">⚖️ 对比</button>
+      <button id="btn-eclipse" title="日食月食沙盘">🌑 日食</button>
+      <button id="btn-size" title="比较各天体真实大小">📐 尺寸</button>
+      <button id="btn-science" title="开普勒定律与天文小知识">📖 科普</button>
+      <button id="btn-lang" title="切换语言 / Language">EN</button>
+      <button id="btn-help" title="操作说明">❓</button>
+    </nav>
+  </header>
+
+  <!-- 日期 HUD -->
+  <div id="date-hud">
+    <div id="sim-date">—</div>
+    <div class="hint" id="date-hint">模拟时刻（世界时）· 可用下方日期框跳转到任意一天</div>
+  </div>
+
+  <!-- 行星信息面板 -->
+  <aside id="info-panel" class="hidden">
+    <button id="btn-close-info" title="关闭">✕</button>
+    <h2 id="info-name">—</h2>
+    <div id="info-en">—</div>
+    <p id="info-desc"></p>
+    <ul id="info-rows"></ul>
+    <div id="info-facts"></div>
+    <div id="info-actions">
+      <button id="btn-follow">🎯 跟随视角</button>
+      <button id="btn-speak" title="朗读档案">🔊 朗读</button>
+      <button id="btn-ring" style="display:none" title="运镜至环面俯瞰卡西尼缝">🛰️ 近距离俯瞰光环</button>
+    </div>
+  </aside>
+
+  <!-- 时间轴刷子（默认隐藏） -->
+  <div id="timeline" class="hidden">
+    <span class="tl-cap">−100 年</span>
+    <input type="range" id="tl-slider" min="-1000" max="1000" value="0" step="1">
+    <span class="tl-cap">+100 年</span>
+    <div id="tl-ticks"></div>
+    <span id="tl-span"></span>
+  </div>
+
+  <!-- 底部控制台 -->
+  <div id="bottom-dock">
+    <div id="planet-chips"></div>
+    <div id="controls-row">
+      <button id="btn-play" title="暂停 / 继续（空格）">⏸</button>
+      <button id="btn-today" title="回到今天">今天</button>
+      <input type="date" id="date-input" title="跳转到指定日期（1800-2050 年最精确）">
+      <div id="speed-box">
+        <span class="lbl" id="lbl-speed">流速</span>
+        <input type="range" id="speed-slider" min="0" max="100" value="58" step="1">
+        <span id="speed-readout">—</span>
+      </div>
+      <label class="toggle"><input type="checkbox" id="tg-orbits" checked><span id="tg-orbits-lbl">轨道</span></label>
+      <label class="toggle"><input type="checkbox" id="tg-labels" checked><span id="tg-labels-lbl">标签</span></label>
+      <label class="toggle"><input type="checkbox" id="tg-belt" checked><span id="tg-belt-lbl">环带</span></label>
+      <label class="toggle"><input type="checkbox" id="tg-bloom" checked><span id="tg-bloom-lbl">辉光</span></label>
+      <label class="toggle" title="联网加载 NASA 真实贴图（地球/月球/火星）"><input type="checkbox" id="tg-realtex"><span id="tg-realtex-lbl">真实贴图</span></label>
+      <button id="btn-mode" title="切换行星距离比例">距离：压缩（观赏）</button>
+      <button id="btn-bg" title="切换宇宙背景颜色">🌌 深空黑</button>
+      <button id="btn-hz" title="显示宜居带（绿色区域=允许液态水）">🟢 宜居带</button>
+      <button id="btn-axis" title="高倾角行星的自转轴虚线（金星倒转/天王星躺转）">📏 自转轴</button>
+      <button id="btn-const" title="星座连线与黄道圈">⭐ 星座</button>
+      <button id="btn-timeline" title="时间轴：±100 年拖拽漫游">⏳ 时间轴</button>
+      <button id="btn-probe" title="显示/隐藏人类探测器的历史足迹">🛰️ 探测器</button>
+      <select id="sys-select" title="切换行星系统"></select>
+      <button id="btn-phase" title="以地球视角观察选中天体的圆缺">🌓 相位</button>
+      <button id="btn-project" title="隐藏界面，适合教室投影">🎬 投影</button>
+      <button id="btn-share" title="生成可分享的当前场景链接">🔗 分享此刻</button>
+    </div>
+  </div>
+
+  <!-- 科普滚动条 -->
+  <div id="fact-ticker" class="fade-in">…</div>
+
+  <!-- 漫游课程卡片 -->
+  <div id="tour-card" class="hidden">
+    <div id="tour-title">—</div>
+    <div id="tour-text">—</div>
+    <div id="tour-wait" class="hidden">
+      <div class="tw-label">⏳ 正在等待模拟时间推进…</div>
+      <div class="tw-bar"><div id="tour-wait-bar"></div></div>
+    </div>
+    <div id="tour-quiz" class="hidden"></div>
+    <div id="tour-progress-area">
+      <div id="tour-step-count">1 / 1</div>
+      <div id="tour-dots"></div>
+      <div class="tour-btns">
+        <button id="btn-tour-sound" title="语音朗读">🔇</button>
+        <button id="btn-tour-auto" title="自动播放：语音读完或 8 秒后自动下一步">⏱</button>
+        <button id="btn-tour-prev">⏮ 上一步</button>
+        <button id="btn-tour-next" class="hot">下一步 ▶</button>
+        <button id="btn-tour-exit" title="退出课程">⏹</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 相位观察说明 -->
+  <div id="phase-caption" class="hidden"></div>
+
+  <!-- 投影模式退出按钮 -->
+  <button id="btn-exit-project" class="hidden">✕ 退出投影模式 (Esc)</button>
+
+  <!-- 通用 toast -->
+  <div id="toast"></div>
+
+  <!-- 今晚天空 -->
+  <div class="modal hidden" id="modal-sky">
+    <div class="modal-card wide">
+      <button class="modal-close">✕</button>
+      <h2 id="sky-h">👁️ 今晚天空</h2>
+      <p class="modal-sub" id="sky-sub">今晚能看到哪些行星？由模拟时刻的真实轨道位置计算距角，告诉你往哪个方向看</p>
+      <canvas id="sky-canvas" width="860" height="300"></canvas>
+      <div id="sky-extras">
+        <div id="sky-zodiac"></div>
+        <button id="btn-csv" title="导出当前行星位置表">📄 导出 CSV</button>
+      </div>
+      <div id="sky-meteors" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <!-- 星座神话小传 -->
+  <div class="modal hidden" id="modal-constellation">
+    <div class="modal-card">
+      <button class="modal-close">✕</button>
+      <h2 id="const-h">✨ 星座</h2>
+      <p id="con-story" style="font-size:13.5px; line-height:1.85; color:#d5e0f2; min-height:80px;"></p>
+      <p id="con-star" style="font-size:12.5px; color:#ffe9b8; margin-top:10px;"></p>
+      <p class="src-note">点击 3D 星空中的亮星标签，或今晚天空面板中的黄道宫，即可打开对应神话。</p>
+    </div>
+  </div>
+
+  <!-- 月相望远镜 -->
+  <div class="modal hidden" id="modal-moon">
+    <div class="modal-card wide">
+      <button class="modal-close">✕</button>
+      <h2 id="moon-h">🌙 月相望远镜</h2>
+      <p class="modal-sub" id="moon-sub">当前模拟时刻的真实月相——由日月位置计算，拨动日期看月相轮转</p>
+      <canvas id="moon-canvas" width="720" height="430"></canvas>
+    </div>
+  </div>
+
+  <!-- 天文日历 -->
+  <div class="modal hidden" id="modal-calendar">
+    <div class="modal-card">
+      <button class="modal-close">✕</button>
+      <h2 id="cal-h">📅 天文日历</h2>
+      <p class="modal-sub" id="cal-sub">2020–2061 关键天象——点击任意一条，模拟器跳转到那天的真实星空并自动运镜</p>
+      <input type="text" id="cal-search" placeholder="按年份筛选，如 2029" style="width:100%; margin-bottom:10px;">
+      <div id="cal-list" style="max-height:46vh; overflow-y:auto;"></div>
+      <div id="cal-detail" class="hidden"></div>
+    </div>
+  </div>
+
+  <!-- 每日一题 -->
+  <div class="modal hidden" id="modal-quiz">
+    <div class="modal-card">
+      <button class="modal-close">✕</button>
+      <h2 id="quiz-h">🎲 每日一题 <span id="qd-points" style="float:right; color:#ffd97a;">⭐ 0</span></h2>
+      <p class="modal-sub" id="quiz-sub">从全部课程题库随机出题，答对积分，答错也有讲解</p>
+      <div id="qd-box"></div>
+    </div>
+  </div>
+
+  <!-- 凌星法实验室 -->
+  <div class="modal hidden" id="modal-transit">
+    <div class="modal-card wide">
+      <button class="modal-close">✕</button>
+      <h2 id="transit-h">🔭 凌星法实验室</h2>
+      <p class="modal-sub" id="transit-sub">系外行星就是这样被发现的：行星从恒星面前掠过，星光轻微变暗——开普勒望远镜靠捕捉约 0.1% 的凹陷找到了 2600+ 颗行星</p>
+      <canvas id="transit-canvas" width="860" height="380"></canvas>
+      <div id="tr-controls">
+        <div class="tr-row">
+          <span class="tr-lbl">行星大小</span>
+          <input type="range" id="tr-rp" min="-0.1" max="1.15" step="0.01" value="0">
+          <span class="tr-v" id="tr-rp-v">1.0 R⊕</span>
+          <span class="tr-lbl">公转周期</span>
+          <input type="range" id="tr-period" min="0.3" max="2.6" step="0.01" value="2.56">
+          <span class="tr-v" id="tr-period-v">365 d</span>
+          <span class="tr-lbl">轨道倾角（撞击参数 b）</span>
+          <input type="range" id="tr-b" min="0" max="1.2" step="0.01" value="0">
+          <span class="tr-v" id="tr-b-v">0.00</span>
+        </div>
+        <div class="tr-row">
+          <span class="tr-lbl">恒星：</span>
+          <button class="tr-star active" data-star="sun">G 型（太阳）</button>
+          <button class="tr-star" data-star="k">K 型（0.7 R☉）</button>
+          <button class="tr-star" data-star="m">M 型红矮星（0.12 R☉）</button>
+          <span class="tr-sep"></span>
+          <span class="tr-lbl">预设：</span>
+          <button class="tr-preset" data-pre="earth">🌍 地球</button>
+          <button class="tr-preset" data-pre="hj">🔥 热木星</button>
+          <button class="tr-preset" data-pre="te">🌊 TRAPPIST-1e</button>
+          <button id="tr-play">⏸ 暂停</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 流星雨沙盘 -->
+  <div class="modal hidden" id="modal-meteors">
+    <div class="modal-card wide">
+      <button class="modal-close">✕</button>
+      <h2 id="meteors-h">☄️ 流星雨沙盘</h2>
+      <p class="modal-sub" id="meteors-sub">流星雨是地球穿过彗星遗留尘埃带的时刻——所以每年总在固定日期如约而至</p>
+      <canvas id="meteors-canvas" width="860" height="380"></canvas>
+      <div id="me-controls">
+        <div class="tr-row">
+          <span class="tr-lbl">流星雨：</span>
+          <button class="me-shower active" data-shower="perseids">英仙座（8 月）</button>
+          <button class="me-shower" data-shower="orionids">猎户座（10 月 · 哈雷）</button>
+          <button class="me-shower" data-shower="leonids">狮子座（11 月）</button>
+          <span class="tr-sep"></span>
+          <button id="me-peak">🎯 跳到峰值日</button>
+          <button id="me-play">⏸ 暂停</button>
+          <span class="tr-lbl">日期</span>
+          <input type="range" id="me-day" min="0" max="364" step="1" value="224">
+          <span class="tr-v" id="me-day-v">8 月 12 日</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 恒星的一生 -->
+  <div class="modal hidden" id="modal-starlife">
+    <div class="modal-card wide">
+      <button class="modal-close">✕</button>
+      <h2 id="starlife-h">🌟 太阳的一生</h2>
+      <p class="modal-sub" id="starlife-sub">从一片分子云到永恒的白矮星——约 120 亿年的完整故事</p>
+      <canvas id="starlife-canvas" width="760" height="380"></canvas>
+      <div id="sl-controls">
+        <div id="sl-title-row">
+          <span id="sl-name">🌫️ 分子云</span>
+          <span id="sl-age">0 岁</span>
+        </div>
+        <div class="sl-bar-track"><div id="sl-bar"></div></div>
+        <p id="sl-desc"></p>
+        <p id="sl-detail" class="dim"></p>
+        <div id="sl-btns">
+          <button id="sl-prev">⏮ 上一阶段</button>
+          <button id="sl-play" class="hot">⏸ 暂停</button>
+          <button id="sl-next">下一阶段 ⏭</button>
+        </div>
+        <div id="sl-dots"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 尺寸对比 -->
+  <div class="modal hidden" id="modal-size">
+    <div class="modal-card wide">
+      <button class="modal-close">✕</button>
+      <h2 id="size-h">📐 天体真实尺寸对比</h2>
+      <p class="modal-sub" id="size-sub">所有天体按同一线性比例绘制（太阳过大，仅显示边缘一部分）</p>
+      <canvas id="size-canvas" width="960" height="330"></canvas>
+    </div>
+  </div>
+
+  <!-- 科普课堂 -->
+  <div class="modal hidden" id="modal-science">
+    <div class="modal-card">
+      <button class="modal-close">✕</button>
+      <h2 id="science-h">📖 科普课堂</h2>
+      <h3 class="sec" id="science-kepler-h">开普勒行星运动三定律 —— 就在本演示中观察它们</h3>
+      <div id="science-kepler"></div>
+      <h3 class="sec" id="science-tips-h">更多天文小知识</h3>
+      <div id="science-tips"></div>
+      <p class="src-note" id="src-note">行星位置数据来源：NASA/JPL《Approximate Positions of the Planets》（J2000 开普勒要素，适用 1800–2050 年）。<br>哈雷彗星与矮行星轨道为科普级近似要素。</p>
+    </div>
+  </div>
+
+  <!-- 帮助 -->
+  <div class="modal hidden" id="modal-help">
+    <div class="modal-card">
+      <button class="modal-close">✕</button>
+      <h2 id="help-h">❓ 使用帮助</h2>
+      <div id="help-list"></div>
+    </div>
+  </div>
+
+  <!-- 漫游课程菜单 -->
+  <div class="modal hidden" id="modal-tours">
+    <div class="modal-card">
+      <button class="modal-close">✕</button>
+      <h2 id="tours-h">🎓 漫游课程</h2>
+      <p class="modal-sub" id="tours-sub">由向导带你飞越太阳系：自动运镜 · 实景演示 · 结课小测验 · 收集徽章</p>
+      <div id="tour-list"></div>
+    </div>
+  </div>
+
+  <!-- 成就徽章 -->
+  <div class="modal hidden" id="modal-badges">
+    <div class="modal-card">
+      <button class="modal-close">✕</button>
+      <h2 id="badges-h">🏆 我的成就</h2>
+      <p class="modal-sub" id="badges-sub">完成课程测验（≥70% 正确）即可点亮徽章</p>
+      <div id="badge-grid"></div>
+    </div>
+  </div>
+
+  <!-- 行星对比 -->
+  <div class="modal hidden" id="modal-compare">
+    <div class="modal-card wide">
+      <button class="modal-close">✕</button>
+      <h2 id="compare-h">⚖️ 行星对比</h2>
+      <p class="modal-sub">
+        <select id="cmp-a"></select> vs <select id="cmp-b"></select>
+      </p>
+      <canvas id="compare-canvas" width="880" height="400"></canvas>
+    </div>
+  </div>
+
+  <!-- 日食沙盘 -->
+  <div class="modal hidden" id="modal-eclipse">
+    <div class="modal-card wide">
+      <button class="modal-close">✕</button>
+      <h2 id="eclipse-h">🌑 日食月食沙盘</h2>
+      <p class="modal-sub"><button id="btn-eclipse-play">▶ 自动运行</button> <span id="eclipse-sub-t">把月球拖到太阳与地球之间（新月位），看影子锥扫过地球</span></p>
+      <canvas id="eclipse-canvas" width="880" height="420"></canvas>
+    </div>
+  </div>
+
+  <div id="error-banner" class="hidden"></div>
+
+  <!-- 库与程序（defer：先让加载屏绘制，再执行重量级初始化；defer 保持执行顺序） -->
+  <script defer src="js/lib/three.min.js?v=10"></script>
+  <script defer src="js/lib/OrbitControls.js?v=10"></script>
+  <script defer src="js/lib/postprocessing/CopyShader.js?v=10"></script>
+  <script defer src="js/lib/postprocessing/LuminosityHighPassShader.js?v=10"></script>
+  <script defer src="js/lib/postprocessing/EffectComposer.js?v=10"></script>
+  <script defer src="js/lib/postprocessing/MaskPass.js?v=10"></script>
+  <script defer src="js/lib/postprocessing/ShaderPass.js?v=10"></script>
+  <script defer src="js/lib/postprocessing/RenderPass.js?v=10"></script>
+  <script defer src="js/lib/postprocessing/UnrealBloomPass.js?v=10"></script>
+  <script defer src="js/data.js?v=10"></script>
+  <script defer src="js/i18n.js?v=10"></script>
+  <script defer src="js/textures.js?v=10"></script>
+  <script defer src="js/solar-core.js?v=10"></script>
+  <script defer src="js/solar-bodies.js?v=10"></script>
+  <script defer src="js/solar-ui.js?v=10"></script>
+  <script defer src="js/solar-main.js?v=10"></script>
+  <script defer src="js/tours.js?v=10"></script>
+  <script defer src="js/tools.js?v=10"></script>
+  <script defer src="js/starlife.js?v=10"></script>
+  <script defer src="js/transit.js?v=10"></script>
+  <script defer src="js/meteors.js?v=10"></script>
+  <script defer src="js/sky.js?v=10"></script>
+  <script defer src="js/gamepad.js?v=10"></script>
+  <script defer src="js/constellation.js?v=10"></script>
+  <script defer src="js/moonphase.js?v=10"></script>
+  <script defer src="js/calendar.js?v=10"></script>
+  <script defer src="js/quizdaily.js?v=10"></script>
+  <script defer src="js/boot.js?v=10"></script>
+</body>
+</html>
