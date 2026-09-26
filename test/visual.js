@@ -27,6 +27,7 @@ const SCENES = [
   { name: 'meteors', url: '?view=meteors&freeze=1&novx=1' },
   { name: 'starlife', url: '?view=starlife&freeze=1&novx=1' },
   { name: 'eclipse', url: '?view=eclipse&freeze=1' },
+  { name: 'sky-compass', url: '?view=sky&freeze=1&novx=1' },
   { name: 'en-lang', url: '?freeze=1&lang=en&date=2026-01-01' }
 ];
 
@@ -38,7 +39,7 @@ function shoot(scene, outPath) {
       '--user-data-dir=' + tmpProfile,
       '--window-size=1280,800',
       '--screenshot=' + outPath.replace(/\\/g, '/'),
-      '--virtual-time-budget=12000',
+      '--virtual-time-budget=16000',
       BASE + scene.url
     ], { timeout: 90000, stdio: 'ignore' });
   } finally {

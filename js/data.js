@@ -730,7 +730,7 @@ HELP_ITEMS.push(
  * ============================================================ */
 
 /* 数据版本号：solar-bodies.js 启动时校验，防止浏览器缓存的旧数据与新代码混搭 */
-if (typeof window !== 'undefined') window.DATA_VERSION = 10;
+if (typeof window !== 'undefined') window.DATA_VERSION = 11;
 
 /* 亮星座（s: 恒星 [赤经小时, 赤纬度]；l: 连线索引；b: 亮星中文名） */
 const CONSTELLATIONS = [
@@ -821,6 +821,40 @@ const METEOR_SHOWERS = [
   { key: 'orionids', name: '猎户座流星雨', en: 'Orionids', peak: 294, window: 10, zhr: 20, parent: '哈雷彗星（1P）', radiant: '猎户座', con: 'Orion', orbitTilt: 0.8, nodeDir: 0.5 },
   { key: 'leonids', name: '狮子座流星雨', en: 'Leonids', peak: 321, window: 8, zhr: 15, parent: '坦普尔-塔特尔彗星（55P）', radiant: '狮子座', con: 'Leo', orbitTilt: 0.45, nodeDir: 0.2 },
   { key: 'geminids', name: '双子座流星雨', en: 'Geminids', peak: 352, window: 10, zhr: 150, parent: '小行星法厄同（3200）', radiant: '双子座', con: 'Gemini', orbitTilt: 0.6, nodeDir: -0.2 }
+];
+
+/* v8.0 深空天体（ra: 赤经小时 / dec: 赤纬度） */
+const DEEPSKY = [
+  { n: '昴星团', e: 'Pleiades · M45', ra: 3.79, dec: 24.11, color: 0x9fc8e8,
+    desc: '金牛座的"七姐妹"疏散星团：约 1000 颗刚刚诞生的年轻恒星聚成一群，蓝色反射星云如轻纱缠绕。',
+    descEn: 'The "Seven Sisters" open cluster in Taurus — about 1000 young stars wrapped in blue reflection nebulosity.',
+    facts: ['距离约 444 光年，是离地球最近的星团之一。', '肉眼通常能看到 6~7 颗，视力极佳者可数出 10 颗以上。', '日本斯巴鲁（Subaru）汽车的六连星标志就来自它。'] },
+  { n: '猎户大星云', e: 'Orion Nebula · M42', ra: 5.59, dec: -5.39, color: 0xe8b8a8,
+    desc: '猎户座"佩剑"上的恒星摇篮：1500 光年外的巨大分子云中，成百上千颗新恒星正在点燃。',
+    descEn: 'A stellar nursery in Orion’s sword, 1,350 light-years away, where hundreds of new stars are igniting.',
+    facts: ['肉眼可见的恒星形成区——冬季夜空最壮观的深空天体。', '星云中心的"猎户四边形"以强烈星风雕琢着周围的气体。', '韦伯望远镜在其中拍到大量原行星盘——别处的"太阳系胚胎"。'] },
+  { n: '仙女座星系', e: 'Andromeda Galaxy · M31', ra: 0.71, dec: 41.27, color: 0xd8d8e8,
+    desc: '254 万光年外的旋涡星系，肉眼可见的最遥远天体——上千亿颗恒星的微光汇聚成一枚朦胧的纺锤。',
+    descEn: 'A spiral galaxy 2.5 million light-years away — the farthest object visible to the naked eye.',
+    facts: ['它正以约 110 km/s 的速度接近银河系，约 45 亿年后将相撞并合成"银河仙女系"。', '直径约 22 万光年，比银河系更大。', '秋夜远离城市光害时，肉眼即可看到它拉长的光斑。'] },
+  { n: '蟹状星云', e: 'Crab Nebula · M1', ra: 5.58, dec: 22.01, color: 0xc8e8d8,
+    desc: '公元 1054 年宋代天文学家记录的"天关客星"超新星遗迹——一颗大质量恒星爆炸后的残骸。',
+    descEn: 'Remnant of the AD 1054 supernova, recorded by Song-dynasty astronomers as a “guest star”.',
+    facts: ['《宋史·天文志》记载：至和元年"天关客星，昼见如太白"，23 天后才隐去。', '如今它已膨胀成直径约 11 光年的气体壳。', '中心藏有一颗每秒自转约 30 圈的中子星（脉冲星），像灯塔般周期性扫过地球。'] }
+];
+
+/* v8.0 观测地点预设（lat 纬度北正 / lon 经度东正） */
+const OBSERVATORIES = [
+  { key: 'beijing', n: '北京', en: 'Beijing', lat: 39.90, lon: 116.40 },
+  { key: 'shanghai', n: '上海', en: 'Shanghai', lat: 31.23, lon: 121.47 },
+  { key: 'guangzhou', n: '广州', en: 'Guangzhou', lat: 23.13, lon: 113.26 },
+  { key: 'chengdu', n: '成都', en: 'Chengdu', lat: 30.57, lon: 104.07 },
+  { key: 'urumqi', n: '乌鲁木齐', en: 'Ürümqi', lat: 43.83, lon: 87.62 },
+  { key: 'tokyo', n: '东京', en: 'Tokyo', lat: 35.68, lon: 139.69 },
+  { key: 'singapore', n: '新加坡', en: 'Singapore', lat: 1.35, lon: 103.82 },
+  { key: 'sydney', n: '悉尼', en: 'Sydney', lat: -33.87, lon: 151.21 },
+  { key: 'london', n: '伦敦', en: 'London', lat: 51.51, lon: -0.13 },
+  { key: 'newyork', n: '纽约', en: 'New York', lat: 40.71, lon: -74.01 }
 ];
 
 /* 天文日历（2020–2061 关键天象；cam: follow=跟随天体 / origin=全景机位） */

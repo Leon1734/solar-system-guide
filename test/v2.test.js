@@ -6,9 +6,9 @@ const vm = require('vm');
 const ctx = {};
 vm.createContext(ctx);
 const src = fs.readFileSync(__dirname + '/../js/data.js', 'utf8') +
-  '\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS };';
+  '\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES };';
 vm.runInContext(src, ctx);
-const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS } = ctx.__x;
+const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES } = ctx.__x;
 
 const D2R = Math.PI / 180;
 const TAU = Math.PI * 2;
@@ -297,6 +297,57 @@ radOk ? pass++ : fail++;
   const elong = s => { let e = moonLonDeg(new Date(s).getTime()) - sunLonDeg(new Date(s).getTime()); return ((e % 360) + 360) % 360; };
   check('2024-01-25 狼月距角 [°]', elong('2024-01-25T17:54Z'), 180, 3);
   check('2024-04-08 日食新月距角 [°]', elong('2024-04-08T18:21Z'), 0, 3);
+}
+
+console.log('\nv8 地平坐标/深空天体/观测点检查：');
+// 深空天体：4 个、坐标合法、中英文案齐
+const dsOk = DEEPSKY.length === 4 &&
+  DEEPSKY.every(d => d.ra >= 0 && d.ra < 24 && Math.abs(d.dec) <= 90 && d.desc && d.descEn && d.facts.length >= 2);
+console.log((dsOk ? '✅' : '❌') + ' 深空天体 4 项，坐标与文案合法');
+dsOk ? pass++ : fail++;
+// 观测点：≥8 城、纬度/经度范围合法
+const obsOk = OBSERVATORIES.length >= 8 &&
+  OBSERVATORIES.every(o => Math.abs(o.lat) <= 90 && Math.abs(o.lon) <= 180 && o.n && o.en);
+console.log((obsOk ? '✅' : '❌') + ' 观测点预设 ' + OBSERVATORIES.length + ' 城（含南半球悉尼）');
+obsOk ? pass++ : fail++;
+// 地平坐标锚点（与 sky.js 同算法，固定观测点）——复用既有 D2R3
+function eclToHorizTest(lon, lat, days, latDeg, lonDeg) {
+  const eps = 23.4393 * D2R3;
+  const sinB = Math.sin(lat), cosB = Math.cos(lat);
+  const sinD = sinB * Math.cos(eps) + cosB * Math.sin(eps) * Math.sin(lon);
+  const dec = Math.asin(sinD);
+  const y = Math.sin(lon) * Math.cos(eps) - Math.tan(lat) * Math.sin(eps);
+  const ra = Math.atan2(y, Math.cos(lon));
+  let gmst = (280.46061837 + 360.98564736629 * days) % 360;
+  if (gmst < 0) gmst += 360;
+  let H = (gmst + lonDeg) * D2R - ra;
+  while (H > Math.PI) H -= 2 * Math.PI;
+  while (H < -Math.PI) H += 2 * Math.PI;
+  const phi = latDeg * D2R;
+  const alt = Math.asin(Math.sin(dec) * Math.sin(phi) + Math.cos(dec) * Math.cos(phi) * Math.cos(H));
+  let az = Math.atan2(-Math.cos(dec) * Math.sin(H),
+    Math.sin(dec) * Math.cos(phi) - Math.cos(dec) * Math.sin(phi) * Math.cos(H)) / D2R;
+  az = (az + 360) % 360;
+  return { alt: alt / D2R, az: az };
+}
+const J2000T = Date.UTC(2000, 0, 1, 12);
+{ // 锚点1：北京春分日——扫描全天找太阳最大高度角时刻，应满足 alt≈50° 且此刻 az≈180°（正午正南）
+  const days0 = Math.floor((Date.UTC(2024, 2, 20) - J2000T) / 86400000);
+  let best = { alt: -90, az: 0 };
+  for (let m = 0; m < 1440; m += 2) {
+    const hh = eclToHorizTest(0, 0, days0 + m / 1440, 39.9, 116.4);
+    if (hh.alt > best.alt) best = hh;
+  }
+  check('北京正午太阳高度角 [°]', best.alt, 50, 1.5);
+  check('正午太阳方位角（正南）[°]', Math.min(best.az, 360 - best.az), 180, 1.5);
+}
+{ // 锚点2：天北极（黄道坐标 λ=90°, β=90°-ε）的高度角 = 观测纬度
+  const h = eclToHorizTest(90 * D2R3, 66.5607 * D2R3, 9000, 39.9, 116.4);
+  check('北京天极高度角≈纬度 [°]', h.alt, 39.9, 0.5);
+}
+{ // 锚点3：悉尼（南纬 33.87°）看天北极应在地平线下同角度
+  const h = eclToHorizTest(90 * D2R3, 66.5607 * D2R3, 9000, -33.87, 151.21);
+  check('南半球天极在地平线下 [°]', h.alt, -33.87, 0.5);
 }
 
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');

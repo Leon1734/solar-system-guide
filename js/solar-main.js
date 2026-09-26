@@ -247,6 +247,11 @@ function simulate(dt) {
       if (b.cloudMesh) b.cloudMesh.rotation.y = b.mesh.rotation.y * 1.12;
     });
     cometBodies.forEach(function (b) { updateComet(b); });
+    // v8.0：67P 双瓣模型特写自转
+    if (window.__duckSpin && window.__duckSpin.visible) {
+      window.__duckSpin.rotation.y += dt * 0.5;
+      window.__duckSpin.rotation.z += dt * 0.18;
+    }
     updateBelt();
     updateTrojans();
     updateKuiper();
@@ -312,7 +317,7 @@ syncDateInput();
 updatePlayBtn();
 animate();
 if (tourParam) {
-  const viewBtn = { transit: 'btn-transit', meteors: 'btn-meteors', starlife: 'btn-starlife', compare: 'btn-compare', eclipse: 'btn-eclipse', size: 'btn-size', science: 'btn-science', help: 'btn-help', tours: 'btn-tours', badges: 'btn-badges', sky: 'btn-sky' }[tourParam];
+  const viewBtn = { transit: 'btn-transit', meteors: 'btn-meteors', starlife: 'btn-starlife', compare: 'btn-compare', eclipse: 'btn-eclipse', size: 'btn-size', science: 'btn-science', help: 'btn-help', tours: 'btn-tours', badges: 'btn-badges', sky: 'btn-sky', moon: 'btn-moon', cal: 'btn-cal', quiz: 'btn-quiz' }[tourParam];
   if (viewBtn) setTimeout(function () { $(viewBtn).click(); }, 1500);
 }
 // 隐藏加载屏（后台标签中 rAF 不触发，用定时器确保收尾）

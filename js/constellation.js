@@ -58,6 +58,27 @@ window.StarMap = (function () {
         labels.push({ pos: pts[+idx].clone(), el: el, con: c });
       });
     });
+    /* v8.0 深空天体标记（点击出档案卡） */
+    DEEPSKY.forEach(function (d) {
+      const v = new THREE.Vector3();
+      raDecToScene(d.ra, d.dec, v);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: T_DOT, color: d.color, transparent: true, opacity: 0.9, depthWrite: false
+      }));
+      sp.position.copy(v);
+      sp.scale.set(10, 10, 1);
+      group.add(sp);
+      const el = document.createElement('div');
+      el.className = 'body-label star-label ds-label';
+      el.textContent = '🌌 ' + ((I18N && I18N.lang === 'en') ? d.e : d.n);
+      el.style.display = 'none';
+      el.addEventListener('click', function (e) {
+        e.stopPropagation();
+        showDeepSky(d);
+      });
+      labelsRoot.appendChild(el);
+      labels.push({ pos: v.clone(), el: el, con: null });
+    });
     lineMat = new THREE.LineBasicMaterial({
       color: 0x6a86c8, transparent: true, opacity: 0.32, depthWrite: false
     });
@@ -127,6 +148,15 @@ window.StarMap = (function () {
     if (mod) mod.classList.remove('hidden');
   }
 
+  /* v8.0：深空天体卡（复用神话模态框） */
+  function showDeepSky(d) {
+    const en = window.I18N && I18N.lang === 'en';
+    document.getElementById('const-h').textContent = '🌌 ' + (en ? d.e : d.n);
+    document.getElementById('con-story').textContent = en ? (d.descEn || d.desc) : d.desc;
+    document.getElementById('con-star').textContent = '⭐ ' + d.facts[0];
+    document.getElementById('modal-constellation').classList.remove('hidden');
+  }
+
   function toggle(on) {
     state.showConst = !!on;
     if (!group && on) build();
@@ -145,7 +175,7 @@ window.StarMap = (function () {
     build();
   }
 
-  return { toggle: toggle, update: update, highlight: highlight, refreshLang: refreshLang, showMyth: showMyth };
+  return { toggle: toggle, update: update, highlight: highlight, refreshLang: refreshLang, showMyth: showMyth, showDeepSky: showDeepSky };
 })();
 
 /* 自注册：SolarApp 就绪后接入渲染后钩子与语言刷新 */

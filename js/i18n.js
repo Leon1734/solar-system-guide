@@ -28,7 +28,13 @@ window.I18N = (function () {
       areaLaw: '📐 Kepler II: the shaded wedge is the area swept in the last 30 days — fat near perihelion, slim at aphelion, always equal',
       ringView: '🛰️ Flying over the rings — spot the Cassini & Encke gaps',
       csvOk: '📄 Sky report exported as CSV', years: 'yr',
+      duckView: '🦆 Two-lobed "rubber duck" nucleus — two cometesimals merged in a slow collision, Rosetta’s famous find',
       noMeteor: 'No major meteor shower nearby',
+      below: 'Below the horizon', visible: 'Visible',
+      title2: 'Horizon compass · true azimuth & altitude at the simulated moment',
+      note2: 'Azimuth 0–360° clockwise from north · altitude above the horizon · drag time to watch bodies rise and set',
+      custom: 'Custom…', customPlace: 'Custom', myPlace: 'My location',
+      gotLoc: 'Located:', noGeo: 'Geolocation unsupported here', geoDeny: 'Location failed or denied — enter lat/lon manually',
       loading: '🌞 Building the Solar System…', loadingSub: 'Generating planet textures procedurally (offline)',
       hint: 'Simulated time (UTC) · jump to any date below',
       follow: '🎯 Follow', unfollow: '✕ Unfollow',
@@ -340,7 +346,9 @@ window.I18N = (function () {
     'cal-h': EN.cal.title, 'cal-sub': EN.cal.sub, 'cal-search': EN.cal.search,
     'moon-h': EN.moon.title, 'moon-sub': EN.moon.sub,
     'quiz-h': EN.qd.title, 'quiz-sub': EN.qd.sub,
-    'tl-hint': EN.tl.hint
+    'tl-hint': EN.tl.hint,
+    'btn-duck': '🦆 Duck view',
+    'obs-lbl': '📍 Observer', 'btn-obs-loc': '📡 Locate'
   };
 
   /* ---------- API ---------- */

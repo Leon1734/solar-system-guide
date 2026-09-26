@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>太阳系漫游指南 · 交互式三维科普演示</title>
   <meta name="description" content="基于 NASA/JPL 轨道数据的交互式太阳系三维模拟：真实行星位置、开普勒定律演示、漫游课程、系外行星系统">
-  <link rel="stylesheet" href="css/style.css?v=10">
+  <link rel="stylesheet" href="css/style.css?v=11">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🌞</text></svg>">
   <link rel="manifest" href="manifest.webmanifest">
 </head>
@@ -65,6 +65,7 @@
       <button id="btn-follow">🎯 跟随视角</button>
       <button id="btn-speak" title="朗读档案">🔊 朗读</button>
       <button id="btn-ring" style="display:none" title="运镜至环面俯瞰卡西尼缝">🛰️ 近距离俯瞰光环</button>
+      <button id="btn-duck" style="display:none" title="切换为双瓣彗核模型">🦆 双瓣结构</button>
     </div>
   </aside>
 
@@ -147,8 +148,15 @@
     <div class="modal-card wide">
       <button class="modal-close">✕</button>
       <h2 id="sky-h">👁️ 今晚天空</h2>
-      <p class="modal-sub" id="sky-sub">今晚能看到哪些行星？由模拟时刻的真实轨道位置计算距角，告诉你往哪个方向看</p>
-      <canvas id="sky-canvas" width="860" height="300"></canvas>
+      <p class="modal-sub" id="sky-sub">今晚能看到哪些行星？由模拟时刻的真实轨道位置计算方位与高度，告诉你往哪个方向看</p>
+      <div class="tr-row" style="margin-bottom:6px;">
+        <span class="tr-lbl" id="obs-lbl">📍 观测地点</span>
+        <select id="obs-preset"></select>
+        <input type="number" id="obs-lat" step="0.1" min="-89" max="89" style="width:78px;" title="纬度（北为正）">
+        <input type="number" id="obs-lon" step="0.1" min="-180" max="180" style="width:78px;" title="经度（东为正）">
+        <button id="btn-obs-loc" title="使用浏览器定位（需授权）">📡 定位</button>
+      </div>
+      <canvas id="sky-canvas" width="860" height="330"></canvas>
       <div id="sky-extras">
         <div id="sky-zodiac"></div>
         <button id="btn-csv" title="导出当前行星位置表">📄 导出 CSV</button>
@@ -361,33 +369,33 @@
   <div id="error-banner" class="hidden"></div>
 
   <!-- 库与程序（defer：先让加载屏绘制，再执行重量级初始化；defer 保持执行顺序） -->
-  <script defer src="js/lib/three.min.js?v=10"></script>
-  <script defer src="js/lib/OrbitControls.js?v=10"></script>
-  <script defer src="js/lib/postprocessing/CopyShader.js?v=10"></script>
-  <script defer src="js/lib/postprocessing/LuminosityHighPassShader.js?v=10"></script>
-  <script defer src="js/lib/postprocessing/EffectComposer.js?v=10"></script>
-  <script defer src="js/lib/postprocessing/MaskPass.js?v=10"></script>
-  <script defer src="js/lib/postprocessing/ShaderPass.js?v=10"></script>
-  <script defer src="js/lib/postprocessing/RenderPass.js?v=10"></script>
-  <script defer src="js/lib/postprocessing/UnrealBloomPass.js?v=10"></script>
-  <script defer src="js/data.js?v=10"></script>
-  <script defer src="js/i18n.js?v=10"></script>
-  <script defer src="js/textures.js?v=10"></script>
-  <script defer src="js/solar-core.js?v=10"></script>
-  <script defer src="js/solar-bodies.js?v=10"></script>
-  <script defer src="js/solar-ui.js?v=10"></script>
-  <script defer src="js/solar-main.js?v=10"></script>
-  <script defer src="js/tours.js?v=10"></script>
-  <script defer src="js/tools.js?v=10"></script>
-  <script defer src="js/starlife.js?v=10"></script>
-  <script defer src="js/transit.js?v=10"></script>
-  <script defer src="js/meteors.js?v=10"></script>
-  <script defer src="js/sky.js?v=10"></script>
-  <script defer src="js/gamepad.js?v=10"></script>
-  <script defer src="js/constellation.js?v=10"></script>
-  <script defer src="js/moonphase.js?v=10"></script>
-  <script defer src="js/calendar.js?v=10"></script>
-  <script defer src="js/quizdaily.js?v=10"></script>
-  <script defer src="js/boot.js?v=10"></script>
+  <script defer src="js/lib/three.min.js?v=11"></script>
+  <script defer src="js/lib/OrbitControls.js?v=11"></script>
+  <script defer src="js/lib/postprocessing/CopyShader.js?v=11"></script>
+  <script defer src="js/lib/postprocessing/LuminosityHighPassShader.js?v=11"></script>
+  <script defer src="js/lib/postprocessing/EffectComposer.js?v=11"></script>
+  <script defer src="js/lib/postprocessing/MaskPass.js?v=11"></script>
+  <script defer src="js/lib/postprocessing/ShaderPass.js?v=11"></script>
+  <script defer src="js/lib/postprocessing/RenderPass.js?v=11"></script>
+  <script defer src="js/lib/postprocessing/UnrealBloomPass.js?v=11"></script>
+  <script defer src="js/data.js?v=11"></script>
+  <script defer src="js/i18n.js?v=11"></script>
+  <script defer src="js/textures.js?v=11"></script>
+  <script defer src="js/solar-core.js?v=11"></script>
+  <script defer src="js/solar-bodies.js?v=11"></script>
+  <script defer src="js/solar-ui.js?v=11"></script>
+  <script defer src="js/solar-main.js?v=11"></script>
+  <script defer src="js/tours.js?v=11"></script>
+  <script defer src="js/tools.js?v=11"></script>
+  <script defer src="js/starlife.js?v=11"></script>
+  <script defer src="js/transit.js?v=11"></script>
+  <script defer src="js/meteors.js?v=11"></script>
+  <script defer src="js/sky.js?v=11"></script>
+  <script defer src="js/gamepad.js?v=11"></script>
+  <script defer src="js/constellation.js?v=11"></script>
+  <script defer src="js/moonphase.js?v=11"></script>
+  <script defer src="js/calendar.js?v=11"></script>
+  <script defer src="js/quizdaily.js?v=11"></script>
+  <script defer src="js/boot.js?v=11"></script>
 </body>
 </html>

@@ -256,6 +256,40 @@ const cometBodies = [];
   cometBodies.push(b);
 });
 
+/* v8.0 67P 双瓣"橡皮鸭"特写模型 */
+const c67pBody = cometBodies.find(function (b) { return b.data.key === 'c67p'; });
+if (c67pBody) {
+  const duck = new THREE.Group();
+  const lobe = function (rx, ry, rz, ox) {
+    const m = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 20, 14),
+      new THREE.MeshStandardMaterial({ map: T.halley, roughness: 1, metalness: 0 })
+    );
+    m.scale.set(rx, ry, rz);
+    m.position.x = ox;
+    return m;
+  };
+  duck.add(lobe(0.62, 0.54, 0.56, -0.48));  // 大瓣
+  duck.add(lobe(0.42, 0.36, 0.40, 0.42));   // 小瓣
+  duck.visible = false;
+  c67pBody.group.add(duck);
+  c67pBody.duck = duck;
+  window.__duckToggle = function () {
+    const on = !c67pBody.duck.visible;
+    c67pBody.duck.visible = on;
+    c67pBody.mesh.visible = !on;
+    window.__duckSpin = on ? c67pBody.duck : null;
+    return on;
+  };
+  window.__duckRestore = function () {
+    if (c67pBody.duck.visible) {
+      c67pBody.duck.visible = false;
+      c67pBody.mesh.visible = true;
+      window.__duckSpin = null;
+    }
+  };
+}
+
 function makeTail(count, color, size) {
   const geo = new THREE.BufferGeometry();
   const pos = new Float32Array(count * 3);
@@ -274,6 +308,12 @@ function makeTail(count, color, size) {
 const _hv = new THREE.Vector3(), _anti = new THREE.Vector3(), _tang = new THREE.Vector3(), _p2 = new THREE.Vector3();
 function updateComet(b) {
   if (state.sys !== 'solar') { b.ionTail.pts.visible = b.dustTail.pts.visible = false; return; }
+  // v8.0：双瓣特写时隐藏彗发/彗尾（近距粒子会放大成矩形伪影）
+  if (b.duck && b.duck.visible) {
+    b.coma.material.opacity = 0;
+    b.ionTail.pts.visible = b.dustTail.pts.visible = false;
+    return;
+  }
   const rAU = b.aumag;
   let act = Math.max(0, Math.min(1, (3.6 - rAU) / 3.2));
   act = Math.pow(act, 1.35);

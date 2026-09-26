@@ -11,6 +11,7 @@ function findByKey(key) {
 }
 function selectBody(body, opts) {
   opts = opts || {};
+  if (window.__duckRestore && (!body || body.data.key !== 'c67p')) window.__duckRestore();
   state.selected = body;
   activeList().forEach(function (b) {
     if (b.highlight) b.highlight.visible = false;
@@ -146,6 +147,8 @@ function renderInfoPanel(body) {
   }
   // D1: 土星光环特写按钮
   $('btn-ring').style.display = d.key === 'saturn' ? '' : 'none';
+  // v8.0: 67P 双瓣结构按钮
+  $('btn-duck').style.display = d.key === 'c67p' ? '' : 'none';
   updateFollowBtn();
 }
 function updateLiveDistance() {
@@ -189,6 +192,17 @@ function bindSpeakBtn() {
     if (state.selected && state.selected.data.key === 'saturn') {
       window.SolarApp.goto('saturn', 3.6, 3.0);
       toast(t8('ui.ringView', '🛰️ 正在俯瞰光环——注意恩克缝与卡西尼缝的明暗分层'));
+    }
+  });
+  // v8.0: 67P 双瓣结构特写
+  $('btn-duck').addEventListener('click', function () {
+    if (!window.__duckToggle) return;
+    const on = window.__duckToggle();
+    if (on) {
+      window.SolarApp.goto('c67p', 2.6, 2.6);
+      toast(t8('ui.duckView', '🦆 双瓣"橡皮鸭"结构：两个彗核天体低速相拥而成——罗塞塔号的著名发现'));
+    } else {
+      window.SolarApp.goto('c67p', 14, 2.2);
     }
   });
 }
