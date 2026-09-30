@@ -597,7 +597,7 @@ function savePrefs() {
       slider: +$('speed-slider').value,
       showOrbits: state.showOrbits, showLabels: state.showLabels,
       showBelt: state.showBelt, bloom: state.bloom,
-      bgIndex: state.bgIndex, hz: state.hz, constMode: state.constMode
+      bgIndex: state.bgIndex, hz: state.hz, constMode: state.constMode, showTrail: state.showTrail
     }));
   } catch (e) { }
 }
@@ -615,6 +615,11 @@ function loadPrefs() {
     if (typeof p.constMode === 'string') {
       state.constMode = p.constMode;
       if (p.constMode !== 'off') applyConstModePref();
+    }
+    if (p.showTrail === false) {
+      state.showTrail = false;
+      $('btn-trail').classList.remove('active');
+      setTrailVisible(false);
     }
   } catch (e) { }
 }
@@ -730,6 +735,50 @@ $('btn-axis').addEventListener('click', function () {
   (window.__axisLines || []).forEach(function (l) { l.visible = state.showAxis; });
   savePrefs();
 });
+$('btn-trail').addEventListener('click', function () {
+  state.showTrail = !state.showTrail;
+  this.classList.toggle('active', state.showTrail);
+  setTrailVisible(state.showTrail);
+  savePrefs();
+});
+/* v10.0 音效开关（需用户手势激活音频上下文） */
+$('btn-sfx').addEventListener('click', function () {
+  const on = window.Sfx.toggle();
+  this.classList.toggle('active', on);
+  this.textContent = on ? '🔊 音效' : '🔇 静音';
+  if (on) window.Sfx.chime();
+  savePrefs();
+});
+/* v10.0 快照分享：当前画面 PNG + 水印 */
+$('btn-shot').addEventListener('click', function () {
+  const A = window.SolarApp;
+  if (typeof A.renderOnce !== 'function') return;
+  A.renderOnce();
+  const src = A.renderer.domElement;
+  const cv = document.createElement('canvas');
+  cv.width = src.width; cv.height = src.height + 34;
+  const c2 = cv.getContext('2d');
+  c2.fillStyle = '#02030a';
+  c2.fillRect(0, src.height, cv.width, 34);
+  c2.drawImage(src, 0, 0);
+  const d = simDate();
+  c2.fillStyle = 'rgba(230,238,251,0.92)';
+  c2.font = '13px sans-serif';
+  c2.fillText('🌞 太阳系漫游指南 · ' +
+    d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate()) +
+    ' · ' + obs2Label(), 12, src.height + 22);
+  const a = document.createElement('a');
+  a.href = cv.toDataURL('image/png');
+  a.download = 'solar-snapshot-' + d.getUTCFullYear() + pad2(d.getUTCMonth() + 1) + pad2(d.getUTCDate()) + '.png';
+  a.click();
+  toast(t8('ui.shotOk', '📸 快照已保存'));
+});
+function obs2Label() {
+  try {
+    const s = JSON.parse(localStorage.getItem('solar_obs_v1') || 'null');
+    return s && s.label ? s.label : '';
+  } catch (e) { return ''; }
+}
 /* v9.0 星座层模式保存/恢复 */
 function applyConstModePref() {
   if (state.constMode && state.constMode !== 'off') {

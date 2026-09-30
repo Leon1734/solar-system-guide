@@ -120,6 +120,37 @@ function applySpin(b, rawAngle) {
   b.lastRotRaw = rawAngle;
 }
 
+/* v10.0 水星凌日检测：水星地心方向与太阳方向夹角进入日面视半径内 */
+let transitToastUntil = 0;
+function checkTransit() {
+  if (state.sys !== 'solar' || state.paused) return;
+  // 每 40 帧检测一次（约 0.7 秒）
+  if (Math.floor(clock.elapsedTime * 1.5) % 2 !== 0) { /* 低频化由计数器控制 */ }
+  const days = state.simDays;
+  helioPos(PLANETS[2], days, _t1e);
+  helioPos(findMercury(), days, _t2e);
+  const mx = _t2e.x - _t1e.x, my = _t2e.y - _t1e.y, mz = _t2e.z - _t1e.z;
+  const sx = -_t1e.x, sy = -_t1e.y, sz = -_t1e.z;
+  const dot = mx * sx + my * sy + mz * sz;
+  const mm = Math.hypot(mx, my, mz), sm = Math.hypot(sx, sy, sz);
+  const sep = Math.acos(Math.max(-1, Math.min(1, dot / (mm * sm)))) / D2R;
+  const now = clock.elapsedTime;
+  if (sep < 0.28 && mm < sm) {
+    if (now > transitToastUntil) {
+      transitToastUntil = now + 30;
+      toast(t8('ui.transit', '🌑 水星凌日进行中！水星正掠过太阳圆面（日历 2032-11-13 有记载）'));
+    }
+  } else if (sep > 1) {
+    transitToastUntil = 0; // 离开凌日后允许下次再提示
+  }
+}
+const _t1e = { x: 0, y: 0, z: 0 }, _t2e = { x: 0, y: 0, z: 0 };
+let _mercRef = null;
+function findMercury() {
+  if (!_mercRef) _mercRef = PLANETS.find(function (p) { return p.key === 'mercury'; });
+  return _mercRef;
+}
+
 /* ================= SolarApp 对外 API ================= */
 const tickHooks = [], afterHooks = [];
 const SolarApp = {
@@ -168,7 +199,8 @@ const SolarApp = {
   toggleProject: function (on) { setProject(on === undefined ? !state.project : on); },
   onTick: function (fn) { tickHooks.push(fn); },
   onAfterRender: function (fn) { afterHooks.push(fn); },
-  tickOnce: function (dt) { simulate(dt || 0.016); renderFrame(dt || 0.016); },
+    tickOnce: function (dt) { simulate(dt || 0.016); renderFrame(dt || 0.016); },
+    renderOnce: function () { renderFrame(0); },
   fmtNum: fmtNum, AU_KM: AU_KM, TAU: TAU
 };
 window.SolarApp = SolarApp;
@@ -257,6 +289,8 @@ function simulate(dt) {
     updateKuiper();
     updateProbes();
     updateAreaWedge();
+    updateTrails();
+    checkTransit();
   } else {
     updateExo();
   }

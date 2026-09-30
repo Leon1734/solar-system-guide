@@ -27,6 +27,7 @@ const ASSETS = [
   './js/moonphase.js',
   './js/calendar.js',
   './js/quizdaily.js',
+  './js/sfx.js',
   './js/boot.js',
   './js/lib/three.min.js',
   './js/lib/OrbitControls.js',

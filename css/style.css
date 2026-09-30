@@ -539,6 +539,20 @@ button.hot:hover { background: rgba(120, 88, 24, 0.75); border-color: var(--acce
 .star-label { font-size: 11px !important; padding: 1px 7px !important; opacity: 0.85; pointer-events: none; }
 #btn-ring { border-color: rgba(200,168,106,0.5); }
 
+/* v10.0 小屏（≤520px）竖屏深度适配 */
+@media (max-width: 520px) {
+  #brand h1 { font-size: 15px; }
+  #top-actions button { padding: 4px 6px; font-size: 10.5px; }
+  #btn-lang, #btn-help { padding: 4px 5px; }
+  #sim-date { font-size: 13px; }
+  #date-hud { padding: 6px 10px; }
+  #bottom-dock { width: 100vw; bottom: 24px; }
+  #controls-row { padding: 6px; gap: 6px; }
+  #planet-chips { max-height: 58px; }
+  #tour-card { width: 96vw; bottom: 132px; }
+  .modal-card { padding: 16px 14px; }
+}
+
 /* 投影模式：隐藏全部 UI，仅留退出按钮，标签放大 */
 body.projecting #topbar,
 body.projecting #bottom-dock,

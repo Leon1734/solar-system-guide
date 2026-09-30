@@ -217,6 +217,7 @@ window.GravityLab = (function () {
     });
     $('g-launch').addEventListener('click', function () {
       probeT = 0;
+      if (window.Sfx) window.Sfx.launch();
       checkMission();
     });
   }

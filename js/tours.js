@@ -175,6 +175,7 @@ var TourEngine = (function () {
         });
         const fb = document.createElement('div');
         fb.className = 'quiz-feedback ' + (right ? 'ok' : 'no');
+        if (right && window.Sfx) window.Sfx.success();
         fb.textContent = (right
           ? (en ? '✅ Correct! ' : '✅ 答对了！')
           : (en ? '❌ Not quite — the answer is ' + String.fromCharCode(65 + q.answer) + '. ' : '❌ 再想想～正确答案是 ' + String.fromCharCode(65 + q.answer) + '。')) + ' ' + q.explain;

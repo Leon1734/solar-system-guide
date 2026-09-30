@@ -409,5 +409,40 @@ check('木星前方掠过损耗为负', gf.dv < 0 ? 1 : 0, 1, 0);
 check('地球弹弓增益 < 20%（微弱一推）', ge.gainPct < 20 ? 1 : 0, 1, 0);
 check('转弯角随 b 增大而减小', sling(2.0, 'back', 1.2, 1.0).turnDeg < gb.turnDeg ? 1 : 0, 1, 0);
 
+console.log('\nv10 水星凌日锚点检查（2032-11-13）：');
+{ // 水星地心方向与太阳方向夹角应进入日面视半径（<0.28°）
+  const mercury = PLANETS.find(p => p.key === 'mercury');
+  const earth = PLANETS.find(p => p.key === 'earth');
+  function helioRates(p, days) {
+    const T = days / 36525, el = p.elements, rt = p.rates;
+    const a = el.a + rt.a * T, e = el.e + rt.e * T;
+    const M = (((el.L + rt.L * T) - (el.w + rt.w * T)) * D2R3 % 6.2832 + 6.2832) % 6.2832;
+    const om = ((el.w + rt.w * T) - (el.O + rt.O * T)) * D2R3;
+    const O = (el.O + rt.O * T) * D2R3, inc = (el.i + rt.i * T) * D2R3;
+    const E = kepler3(M, e);
+    const xp = a * (Math.cos(E) - e), yp = a * Math.sqrt(1 - e * e) * Math.sin(E);
+    const cw = Math.cos(om), sw = Math.sin(om), cO = Math.cos(O), sO = Math.sin(O);
+    const ci = Math.cos(inc), si = Math.sin(inc);
+    return {
+      x: (cw * cO - sw * sO * ci) * xp + (-sw * cO - cw * sO * ci) * yp,
+      y: (cw * sO + sw * cO * ci) * xp + (-sw * sO + cw * cO * ci) * yp,
+      z: (sw * si) * xp + (cw * si) * yp
+    };
+  }
+  // 在 2032-11-13 前后 6 小时步进扫描最小夹角
+  const t0 = Date.UTC(2032, 10, 12, 12);
+  let minSep = 999;
+  for (let h = -72; h <= 72; h += 6) {
+    const days = (t0 + h * 3600000 - J2000T) / 86400000;
+    const m = helioRates(mercury, days), e = helioRates(earth, days);
+    const mx = m.x - e.x, my = m.y - e.y, mz = m.z - e.z;
+    const sx = -e.x, sy = -e.y, sz = -e.z;
+    const dot = mx * sx + my * sy + mz * sz;
+    const sep = Math.acos(Math.max(-1, Math.min(1, dot / (Math.hypot(mx, my, mz) * Math.hypot(sx, sy, sz))))) / D2R3;
+    if (sep < minSep) minSep = sep;
+  }
+  check('2032-11-13 水星凌日最小地心夹角 [°]', minSep, 0.15, 0.25);
+}
+
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

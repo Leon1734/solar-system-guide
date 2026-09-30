@@ -24,6 +24,7 @@ const SCENES = [
   { name: 'probes', url: '?freeze=1&date=1990-01-01' },
   { name: 'exo-trappist', url: '?sys=trappist1&freeze=1' },
   { name: 'transit-lab', url: '?view=transit&freeze=1&novx=1' },
+  { name: 'trail-inner', url: '?freeze=1&date=2026-01-01' },
   { name: 'gravity', url: '?view=gravity&freeze=1&novx=1' },
   { name: 'meteors', url: '?view=meteors&freeze=1&novx=1' },
   { name: 'starlife', url: '?view=starlife&freeze=1&novx=1' },

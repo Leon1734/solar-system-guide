@@ -4,7 +4,7 @@
 'use strict';
 if (window.SolarOK === false) { window.__abortQuiet = true; throw new Error('solar boot aborted'); }
 /* 数据版本守卫：浏览器缓存了旧 data.js 时给出明确指引，而非神秘未定义错误 */
-if ((window.DATA_VERSION || 0) < 10) {
+if ((window.DATA_VERSION || 0) < 14) {
   window.__firstErrShown = false;
   showBanner('⚠️ 检测到旧版缓存数据，请按 Ctrl+F5 强制刷新页面（或清除浏览器缓存）后重试');
   window.__firstErrShown = true;
@@ -192,6 +192,54 @@ function buildOrbitingBody(p, minor) {
 
 PLANETS.forEach(function (p) { buildOrbitingBody(p, false); });
 DWARFS.forEach(function (p) { buildOrbitingBody(p, true); });
+
+/* ---- v10.0 行星轨迹拖尾：近段运动轨迹（由轨道数学逐帧重建，跳日期无脏数据） ---- */
+const trailSets = [];
+let trailLastDays = null;
+PLANETS.forEach(function (p) {
+  const N = 40;
+  const windowDays = Math.min(3000, Math.max(15, p.periodDays * 0.25));
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array((N + 1) * 3), 3));
+  const colors = new Float32Array((N + 1) * 3);
+  const c = new THREE.Color(p.color);
+  for (let i = 0; i <= N; i++) {
+    const f = i / N; // 头亮尾暗
+    colors[i * 3] = c.r * f; colors[i * 3 + 1] = c.g * f; colors[i * 3 + 2] = c.b * f;
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  const line = new THREE.Line(geo, new THREE.LineBasicMaterial({
+    vertexColors: true, transparent: true, opacity: 0.75, depthWrite: false
+  }));
+  line.visible = state.showTrail;
+  line.frustumCulled = false;
+  scene.add(line);
+  trailSets.push({ data: p, line: line, N: N, windowDays: windowDays });
+});
+let trailFrame = 0;
+function updateTrails() {
+  if (!state.showTrail) return;
+  if (trailLastDays !== null && Math.abs(state.simDays - trailLastDays) < 0.0001) return; // 暂停不重建
+  trailLastDays = state.simDays;
+  trailFrame++;
+  const heavy = trailFrame % 2; // 隔帧轮流更新前后半，省一半开销
+  trailSets.forEach(function (t, ti) {
+    if (state.distanceMode === 'real' && t.windowDays > 3000) return;
+    if ((ti + trailFrame) % 2 === 0 && trailSets.length > 4) { /* 分帧 */ }
+    const arr = t.line.geometry.attributes.position.array;
+    for (let i = 0; i <= t.N; i++) {
+      const d = state.simDays - t.windowDays * (1 - i / t.N);
+      helioPos(t.data, d, _tmp);
+      mapAU(_tmp.x, _tmp.y, _tmp.z, _v3);
+      arr[i * 3] = _v3.x; arr[i * 3 + 1] = _v3.y; arr[i * 3 + 2] = _v3.z;
+    }
+    t.line.geometry.attributes.position.needsUpdate = true;
+  });
+}
+function setTrailVisible(on) {
+  trailSets.forEach(function (t) { t.line.visible = on; });
+  if (on) trailLastDays = null; // 强制重建
+}
 
 /* ---- 宜居带叠加层（v4.0 A3） ---- */
 let hzRing = null;
