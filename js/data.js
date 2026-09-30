@@ -730,7 +730,7 @@ HELP_ITEMS.push(
  * ============================================================ */
 
 /* 数据版本号：solar-bodies.js 启动时校验，防止浏览器缓存的旧数据与新代码混搭 */
-if (typeof window !== 'undefined') window.DATA_VERSION = 11;
+if (typeof window !== 'undefined') window.DATA_VERSION = 12;
 
 /* 亮星座（s: 恒星 [赤经小时, 赤纬度]；l: 连线索引；b: 亮星中文名） */
 const CONSTELLATIONS = [
@@ -814,16 +814,50 @@ const CONSTELLATION_MYTHS = {
   'Ursa Minor': { story: '卡利斯托之子阿卡斯化作的小熊，与母亲绕着天极共舞。小熊尾巴尖上的勾陈一（北极星），数千年来为所有北半球的旅人指引方向。', storyEn: 'The Little Bear whose tail holds Polaris, the North Star.', star: '北极星距北天极仅 0.7°，且是一颗造父变星。' }
 };
 
-/* v7.0 流星雨（peak: 年内第几天；con: 辐射点星座英文名，联动星座层） */
+/* v9.0 流星雨（peak: 年内第几天；con: 辐射点星座英文名；ra/dec: 辐射点赤经赤纬） */
 const METEOR_SHOWERS = [
-  { key: 'quadrantids', name: '象限仪座流星雨', en: 'Quadrantids', peak: 4, window: 5, zhr: 110, parent: '小行星 2003 EH1（疑似 extinct 彗核）', radiant: '牧夫座', con: 'Boötes', orbitTilt: 0.7, nodeDir: 0.3 },
-  { key: 'perseids', name: '英仙座流星雨', en: 'Perseids', peak: 224, window: 12, zhr: 100, parent: '斯威夫特-塔特尔彗星（109P）', radiant: '英仙座', con: 'Perseus', orbitTilt: 0.55, nodeDir: -0.6 },
-  { key: 'orionids', name: '猎户座流星雨', en: 'Orionids', peak: 294, window: 10, zhr: 20, parent: '哈雷彗星（1P）', radiant: '猎户座', con: 'Orion', orbitTilt: 0.8, nodeDir: 0.5 },
-  { key: 'leonids', name: '狮子座流星雨', en: 'Leonids', peak: 321, window: 8, zhr: 15, parent: '坦普尔-塔特尔彗星（55P）', radiant: '狮子座', con: 'Leo', orbitTilt: 0.45, nodeDir: 0.2 },
-  { key: 'geminids', name: '双子座流星雨', en: 'Geminids', peak: 352, window: 10, zhr: 150, parent: '小行星法厄同（3200）', radiant: '双子座', con: 'Gemini', orbitTilt: 0.6, nodeDir: -0.2 }
+  { key: 'quadrantids', name: '象限仪座流星雨', en: 'Quadrantids', peak: 4, window: 5, zhr: 110, parent: '小行星 2003 EH1（疑似 extinct 彗核）', radiant: '牧夫座', con: 'Boötes', ra: 15.3, dec: 49, orbitTilt: 0.7, nodeDir: 0.3 },
+  { key: 'perseids', name: '英仙座流星雨', en: 'Perseids', peak: 224, window: 12, zhr: 100, parent: '斯威夫特-塔特尔彗星（109P）', radiant: '英仙座', con: 'Perseus', ra: 3.13, dec: 58, orbitTilt: 0.55, nodeDir: -0.6 },
+  { key: 'orionids', name: '猎户座流星雨', en: 'Orionids', peak: 294, window: 10, zhr: 20, parent: '哈雷彗星（1P）', radiant: '猎户座', con: 'Orion', ra: 6.33, dec: 16, orbitTilt: 0.8, nodeDir: 0.5 },
+  { key: 'leonids', name: '狮子座流星雨', en: 'Leonids', peak: 321, window: 8, zhr: 15, parent: '坦普尔-塔特尔彗星（55P）', radiant: '狮子座', con: 'Leo', ra: 10.28, dec: 21, orbitTilt: 0.45, nodeDir: 0.2 },
+  { key: 'geminids', name: '双子座流星雨', en: 'Geminids', peak: 352, window: 10, zhr: 150, parent: '小行星法厄同（3200）', radiant: '双子座', con: 'Gemini', ra: 7.48, dec: 32, orbitTilt: 0.6, nodeDir: -0.2 }
 ];
 
-/* v8.0 深空天体（ra: 赤经小时 / dec: 赤纬度） */
+/* v9.0 二十八宿（距星赤经赤纬 J2000 近似；img 四象；meaning 一句话）
+ * 顺序即月亮的"驿站"路线：角亢氐房心尾箕（青龙）→ 斗牛女虚危室壁（玄武）→
+ * 奎娄胃昴毕觜参（白虎）→ 井鬼柳星张翼轸（朱雀） */
+const CONST_MANSIONS = [
+  { n: '角', e: 'Jiao (Horn)', img: '东方青龙', ra: 13.42, dec: -11.16, star: '角宿一', meaning: '青龙之角——角宿一正是龙角尖，春分黄昏升起时即是播种季节。' },
+  { n: '亢', e: 'Kang (Neck)', img: '东方青龙', ra: 14.15, dec: -10.30, star: '亢宿一', meaning: '青龙的咽喉，主天下的疾疫与政令。' },
+  { n: '氐', e: 'Di (Root)', img: '东方青龙', ra: 14.85, dec: -16.04, star: '氐宿一', meaning: '青龙的胸与根，"氐"即根本。' },
+  { n: '房', e: 'Fang (Room)', img: '东方青龙', ra: 15.98, dec: -26.10, star: '房宿四', meaning: '青龙之腹，又称"天驷"——拉车的四匹天马。' },
+  { n: '心', e: 'Xin (Heart)', img: '东方青龙', ra: 16.49, dec: -26.43, star: '心宿二（大火）', meaning: '青龙之心：著名的大火星。古人"七月流火"说的就是它西沉，预示天气转凉。' },
+  { n: '尾', e: 'Wei (Tail)', img: '东方青龙', ra: 17.56, dec: -37.10, star: '尾宿八', meaning: '青龙的尾巴，九星弯曲如钩。' },
+  { n: '箕', e: 'Ji (Winnowing Basket)', img: '东方青龙', ra: 18.10, dec: -30.42, star: '箕宿一', meaning: '簸箕——扬谷去糠的风箱，主风。' },
+  { n: '斗', e: 'Dou (Southern Dipper)', img: '北方玄武', ra: 18.76, dec: -26.99, star: '斗宿一', meaning: '南斗六星，与北斗遥相呼应，主爵禄。' },
+  { n: '牛', e: 'Niu (Ox)', img: '北方玄武', ra: 20.35, dec: -14.78, star: '牛宿一', meaning: '牵牛的"牺牲"——注意牛郎星（河鼓二）其实在旁边的天鹰座。' },
+  { n: '女', e: 'Nü (Girl)', img: '北方玄武', ra: 20.78, dec: -9.50, star: '女宿一', meaning: '婺女，纺织的女工——织女星同样在其北侧的天琴座。' },
+  { n: '虚', e: 'Xu (Emptiness)', img: '北方玄武', ra: 21.53, dec: -5.57, star: '虚宿一', meaning: '空虚之地：秋夜肃杀，主死丧哭泣。' },
+  { n: '危', e: 'Wei (Rooftop)', img: '北方玄武', ra: 22.10, dec: -0.32, star: '危宿一', meaning: '屋脊之危，主营造与陵寝。' },
+  { n: '室', e: 'Shi (Encampment)', img: '北方玄武', ra: 23.10, dec: 15.21, star: '室宿一', meaning: '营室——天上的宫室。古人见它黄昏中天便开始修屋筑藏。' },
+  { n: '壁', e: 'Bi (Wall)', img: '北方玄武', ra: 0.22, dec: 15.18, star: '壁宿一', meaning: '宫室的东壁，主文章图书。' },
+  { n: '奎', e: 'Kui (Legs)', img: '西方白虎', ra: 0.82, dec: 23.40, star: '奎宿一', meaning: '白虎之足，"奎"通"魁"——后世魁星崇拜主文运源于此。' },
+  { n: '娄', e: 'Lou (Bond)', img: '西方白虎', ra: 1.91, dec: 20.81, star: '娄宿一', meaning: '缚系聚众，主牧养牺牲。' },
+  { n: '胃', e: 'Wei (Stomach)', img: '西方白虎', ra: 3.00, dec: 27.26, star: '胃宿一', meaning: '白虎之胃——天上的粮仓，主仓廪。' },
+  { n: '昴', e: 'Mao (Pleiades)', img: '西方白虎', ra: 3.79, dec: 24.11, star: '昴星团', meaning: '著名的昴星团，古称"旄头"（胡星）；冬季看它最旺。' },
+  { n: '毕', e: 'Bi (Net)', img: '西方白虎', ra: 4.60, dec: 16.51, star: '毕宿五', meaning: '捕猎的长柄网。"毕宿五带雨"——它附近常伴月晕而雨。' },
+  { n: '觜', e: 'Zi (Beak)', img: '西方白虎', ra: 5.59, dec: 9.93, star: '觜宿一', meaning: '白虎的嘴（一说猴头鹰之喙），三颗小星聚成三角。' },
+  { n: '参', e: 'Shen (Three Stars)', img: '西方白虎', ra: 5.53, dec: -0.30, star: '参宿三', meaning: '猎户腰带三星——"三星高照"说的正是它，参商永不相见的"参"即此。' },
+  { n: '井', e: 'Jing (Well)', img: '南方朱雀', ra: 6.63, dec: 16.40, star: '井宿三', meaning: '二十八宿中最大的宿——双子与猎户都算它的"辖区"，主水事。' },
+  { n: '鬼', e: 'Gui (Ghost)', img: '南方朱雀', ra: 8.54, dec: 18.09, star: '鬼宿四', meaning: '鬼宿中央有一团朦胧的"积尸气"——正是蜂巢星团 M44，古人视之为幽冥之气。' },
+  { n: '柳', e: 'Liu (Willow)', img: '南方朱雀', ra: 8.62, dec: 5.70, star: '柳宿一', meaning: '八星弯曲如柳条，主厨膳与木事。' },
+  { n: '星', e: 'Xing (Star)', img: '南方朱雀', ra: 9.46, dec: -8.66, star: '星宿一', meaning: '七星如钩，主衣裳文绣；最亮处即"孤星独燃"的星宿一。' },
+  { n: '张', e: 'Zhang (Extended Net)', img: '南方朱雀', ra: 10.83, dec: -14.30, star: '张宿一', meaning: '张开的弓网（一说是朱雀的嗉囊），主珍宝宗庙。' },
+  { n: '翼', e: 'Yi (Wings)', img: '南方朱雀', ra: 11.00, dec: -18.30, star: '翼宿一', meaning: '朱雀展开的双翅，二十二星是全天宿内星数之最。' },
+  { n: '轸', e: 'Zhen (Chariot Rail)', img: '南方朱雀', ra: 12.26, dec: -17.50, star: '轸宿一', meaning: '车厢底部的横木，主丧葬与车骑——二十八宿的最后一站。' }
+];
+
+/* v9.0 深空天体（ra: 赤经小时 / dec: 赤纬度） */
 const DEEPSKY = [
   { n: '昴星团', e: 'Pleiades · M45', ra: 3.79, dec: 24.11, color: 0x9fc8e8,
     desc: '金牛座的"七姐妹"疏散星团：约 1000 颗刚刚诞生的年轻恒星聚成一群，蓝色反射星云如轻纱缠绕。',
@@ -859,8 +893,9 @@ const OBSERVATORIES = [
 
 /* 天文日历（2020–2061 关键天象；cam: follow=跟随天体 / origin=全景机位） */
 const ASTRO_EVENTS = [
+  { d: '1054-07-04', n: '天关客星（蟹状星云超新星）', en: 'SN 1054 guest star', t: '一颗恒星炸成了今天的蟹状星云——宋代天文学家把它的位置、亮度记录得清清楚楚。', cn: '《宋史·天文志》：至和元年五月己丑，客星出天关东南，可数寸，岁余稍没。', cam: { origin: [0, 60, 80] } },
   { d: '1997-04-01', n: '海尔-波普彗星过近日点', en: 'Hale-Bopp at perihelion', t: '世纪大彗星：彗尾横跨半空，肉眼可见 18 个月。', cam: { follow: 'halebopp' } },
-  { d: '2020-12-21', n: '木土大合（相距仅 0.1°）', en: 'Great conjunction', t: '近 800 年来最近的一次木星合土星，两颗行星几乎融为一颗"双星"。', cam: { origin: [0, 120, 190] } },
+  { d: '2020-12-21', n: '木土大合（相距仅 0.1°）', en: 'Great conjunction', t: '近 800 年来最近的一次木星合土星，两颗行星几乎融为一颗"双星"。', cn: '古称"岁星与填星相犯"——木星（岁星）与土星（镇星/填星）约 20 年一会。', cam: { origin: [0, 120, 190] } },
   { d: '2021-02-18', n: '毅力号登陆火星', en: 'Perseverance landing', t: '人类第 5 辆火星车落地耶泽罗陨石坑，随即放飞了第一架外星直升机"机智号"。', cam: { follow: 'mars' } },
   { d: '2021-11-02', n: '67P 彗星过近日点', en: '67P at perihelion', t: '罗塞塔号的老朋友再次回归，彗发复活。', cam: { follow: 'c67p' } },
   { d: '2022-09-26', n: '木星冲日（59 年来最近）', en: 'Jupiter at opposition', t: '木星与地球相距仅 3.68 亿 km，视直径刷新半个世纪纪录。', cam: { follow: 'jupiter' } },
@@ -880,7 +915,7 @@ const ASTRO_EVENTS = [
   { d: '2044-10-01', n: '金星掩心宿二', en: 'Venus occults Antares', t: '金星从天蝎座最亮星前掠过——罕见掩星。', cam: { origin: [0, 60, 80] } },
   { d: '2046-09-23', n: '海王星发现 200 周年', en: 'Neptune bicentennial', t: '1846 年它在"笔尖上"被发现，此时刚绕太阳约一圈多一点。', cam: { follow: 'neptune' } },
   { d: '2049-08-23', n: '冥王星发现 200 周年', en: 'Pluto bicentennial', t: '从"第九大行星"到矮行星，它见证了行星定义的变迁。', cam: { follow: 'pluto' } },
-  { d: '2061-07-28', n: '哈雷彗星回归（近日点）', en: "Halley's return", t: '1986 → 2061：今天的孩子将亲眼见到它。彗尾永远背向太阳。', cam: { follow: 'halley' } }
+  { d: '2061-07-28', n: '哈雷彗星回归（近日点）', en: "Halley's return", t: '1986 → 2061：今天的孩子将亲眼见到它。彗尾永远背向太阳。', cn: '《史记·秦始皇本纪》载公元前 240 年"彗星先出东方"——那是哈雷一次著名的古代回归。', cam: { follow: 'halley' } }
 ];
 
 /* 每日一题补充题（课程测验之外的扩展题库） */

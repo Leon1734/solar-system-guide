@@ -20,7 +20,7 @@
       .filter(function (ev) { return !filter || ev.d.indexOf(filter) === 0; })
       .map(function (ev) {
         return '<button class="cal-item" data-d="' + ev.d + '">' +
-          '<span class="ci-date">' + ev.d + '</span>' +
+          '<span class="ci-date">' + (ev.cn ? '📜 ' : '') + ev.d + '</span>' +
           '<span class="ci-body"><span class="ci-name">' + (en && ev.en ? ev.en : ev.n) + '</span>' +
           '<span class="ci-desc">' + ev.t + '</span></span></button>';
       }).join('');
@@ -43,7 +43,8 @@
     const card = $('cal-detail');
     const en = window.I18N && I18N.lang === 'en';
     card.classList.remove('hidden');
-    card.innerHTML = '<b>📅 ' + ev.d + ' · ' + (en && ev.en ? ev.en : ev.n) + '</b><p>' + ev.t + '</p>';
+    card.innerHTML = '<b>📅 ' + ev.d + ' · ' + (en && ev.en ? ev.en : ev.n) + '</b><p>' + ev.t + '</p>' +
+      (ev.cn ? '<p style="color:#ffd9a0; margin-top:6px;">📜 ' + ev.cn + '</p>' : '');
     if (window.TourEngine && TourEngine.active()) TourEngine.exit();
   }
 

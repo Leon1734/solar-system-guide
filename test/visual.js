@@ -24,6 +24,7 @@ const SCENES = [
   { name: 'probes', url: '?freeze=1&date=1990-01-01' },
   { name: 'exo-trappist', url: '?sys=trappist1&freeze=1' },
   { name: 'transit-lab', url: '?view=transit&freeze=1&novx=1' },
+  { name: 'gravity', url: '?view=gravity&freeze=1&novx=1' },
   { name: 'meteors', url: '?view=meteors&freeze=1&novx=1' },
   { name: 'starlife', url: '?view=starlife&freeze=1&novx=1' },
   { name: 'eclipse', url: '?view=eclipse&freeze=1' },
@@ -47,6 +48,17 @@ function shoot(scene, outPath) {
   }
 }
 
+/* v9.0 D2：字节指纹（大小 + 64 点采样哈希），比纯大小更灵敏且零依赖 */
+function fingerprint(file) {
+  const buf = fs.readFileSync(file);
+  let h = buf.length;
+  const stride = Math.max(1, Math.floor(buf.length / 64));
+  for (let i = 0; i < buf.length; i += stride) {
+    h = (h * 31 + buf[i]) & 0x7fffffff;
+  }
+  return { size: buf.length, hash: h };
+}
+
 function run() {
   const compare = process.argv[2] === 'compare';
   fs.mkdirSync(OUT, { recursive: true });
@@ -65,10 +77,15 @@ function run() {
           fs.copyFileSync(out, base);
           console.log('基线已建立 (' + Math.round(size / 1024) + 'KB)');
         } else {
-          const bSize = fs.statSync(base).size;
-          const dev = Math.abs(size - bSize) / bSize;
-          if (dev > 0.25) { console.log('❌ 与基线偏差 ' + (dev * 100).toFixed(0) + '%（' + Math.round(bSize / 1024) + '→' + Math.round(size / 1024) + 'KB），请人工核对'); fails++; }
-          else console.log('✅ 偏差 ' + (dev * 100).toFixed(1) + '%');
+          const fp = fingerprint(out), bp = fingerprint(base);
+          const dev = Math.abs(fp.size - bp.size) / bp.size;
+          const hashDev = Math.abs(fp.hash - bp.hash) / bp.hash;
+          if (dev > 0.25 || hashDev > 0.3) {
+            console.log('❌ 与基线偏差（大小 ' + (dev * 100).toFixed(0) + '% / 指纹 ' + (hashDev * 100).toFixed(0) + '%），请人工核对');
+            fails++;
+          } else {
+            console.log('✅ 偏差 大小' + (dev * 100).toFixed(1) + '% / 指纹' + (hashDev * 100).toFixed(1) + '%');
+          }
         }
       } else {
         console.log(Math.round(size / 1024) + 'KB');

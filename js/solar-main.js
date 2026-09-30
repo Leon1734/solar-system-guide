@@ -317,7 +317,7 @@ syncDateInput();
 updatePlayBtn();
 animate();
 if (tourParam) {
-  const viewBtn = { transit: 'btn-transit', meteors: 'btn-meteors', starlife: 'btn-starlife', compare: 'btn-compare', eclipse: 'btn-eclipse', size: 'btn-size', science: 'btn-science', help: 'btn-help', tours: 'btn-tours', badges: 'btn-badges', sky: 'btn-sky', moon: 'btn-moon', cal: 'btn-cal', quiz: 'btn-quiz' }[tourParam];
+  const viewBtn = { transit: 'btn-transit', meteors: 'btn-meteors', starlife: 'btn-starlife', compare: 'btn-compare', eclipse: 'btn-eclipse', size: 'btn-size', science: 'btn-science', help: 'btn-help', tours: 'btn-tours', badges: 'btn-badges', sky: 'btn-sky', moon: 'btn-moon', cal: 'btn-cal', quiz: 'btn-quiz', gravity: 'btn-gravity' }[tourParam];
   if (viewBtn) setTimeout(function () { $(viewBtn).click(); }, 1500);
 }
 // 隐藏加载屏（后台标签中 rAF 不触发，用定时器确保收尾）

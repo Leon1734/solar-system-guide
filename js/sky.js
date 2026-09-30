@@ -39,15 +39,8 @@ window.SkyTonight = (function () {
     return { lon: realMoonLonRad(days), lat: 5.128 * Math.sin(F * D2R) * D2R, dist: 0.00257 };
   }
 
-  /* ---- 黄道 → 赤道 → 地平坐标（v8.0 核心） ---- */
-  function eclToHoriz(lon, lat, days) {
-    const eps = 23.4393 * D2R;
-    const sinB = Math.sin(lat), cosB = Math.cos(lat);
-    const sinD = sinB * Math.cos(eps) + cosB * Math.sin(eps) * Math.sin(lon);
-    const dec = Math.asin(Math.max(-1, Math.min(1, sinD)));
-    const y = Math.sin(lon) * Math.cos(eps) - Math.tan(lat) * Math.sin(eps);
-    const x = Math.cos(lon);
-    const ra = Math.atan2(y, x);
+  /* ---- 黄道 → 赤道 → 地平坐标（v8.0 核心；v9.0 拆出赤道直算供辐射点复用） ---- */
+  function eqToHoriz(ra, dec, days) {
     let gmst = (280.46061837 + 360.98564736629 * days) % 360;
     if (gmst < 0) gmst += 360;
     let H = (gmst + obs.lon) * D2R - ra;
@@ -60,6 +53,16 @@ window.SkyTonight = (function () {
     let az = Math.atan2(azY, azX) / D2R;
     az = (az + 360) % 360;
     return { alt: alt / D2R, az: az, dec: dec / D2R };
+  }
+  function eclToHoriz(lon, lat, days) {
+    const eps = 23.4393 * D2R;
+    const sinB = Math.sin(lat), cosB = Math.cos(lat);
+    const sinD = sinB * Math.cos(eps) + cosB * Math.sin(eps) * Math.sin(lon);
+    const dec = Math.asin(Math.max(-1, Math.min(1, sinD)));
+    const y = Math.sin(lon) * Math.cos(eps) - Math.tan(lat) * Math.sin(eps);
+    const x = Math.cos(lon);
+    const ra = Math.atan2(y, x);
+    return eqToHoriz(ra, dec, days);
   }
 
   function dir8(az) {
@@ -183,6 +186,27 @@ window.SkyTonight = (function () {
       ctx.fillText(b.name, x, below ? y + rr + 14 : y - rr - 8);
       ctx.globalAlpha = 1;
     });
+    // 活跃流星雨的辐射点（v9.0 C2：✨ 标记上罗盘）
+    const date0 = simDate();
+    const doy = Math.floor((date0 - new Date(Date.UTC(date0.getUTCFullYear(), 0, 1))) / 86400000);
+    METEOR_SHOWERS.forEach(function (s) {
+      let dd = Math.abs(doy - s.peak); dd = Math.min(dd, 365 - dd);
+      if (dd > s.window) return;
+      const h = eqToHoriz(s.ra * 15 * D2R, s.dec * D2R, days);
+      if (h.alt < -2) return;
+      const x = azX(h.az);
+      const y = h.alt >= 0 ? HY - Math.min(1, h.alt / 90) * (HY - 30) : HY + 26;
+      ctx.globalAlpha = h.alt < 0 ? 0.4 : 0.95;
+      ctx.fillStyle = '#c8a8ff';
+      ctx.font = '14px sans-serif';
+      ctx.fillText('✨', x - 7, y + 5);
+      ctx.font = '10.5px sans-serif';
+      ctx.fillStyle = '#d8c8ff';
+      ctx.fillText((EN() ? s.en : s.name) + ' 辐射点', x + 8, y + 4);
+      ctx.globalAlpha = 1;
+      ctx.font = '12px sans-serif';
+    });
+
     // 标题
     ctx.textAlign = 'left';
     ctx.fillStyle = '#cfe0ff'; ctx.font = 'bold 13px sans-serif';
@@ -208,7 +232,13 @@ window.SkyTonight = (function () {
       currentRows().forEach(function (r) {
         const z = zodiacOf(r.p, days);
         const con = CONSTELLATIONS.find(function (c) { return c.n === z; });
-        html += '<span class="zz" data-con="' + (con ? con.e : '') + '">' + (EN() ? r.p.en : r.p.name) + ' · ' + z + '</span>';
+        // v9.0 双名：西方宫 + 中国宿
+        const g = geocentricEcl(r.p, days);
+        let lonDeg = ((g.lon / D2R) % 360 + 360) % 360;
+        const mIdx = Math.floor(lonDeg / (360 / 28)) % 28;
+        const man = CONST_MANSIONS[mIdx];
+        html += '<span class="zz" data-con="' + (con ? con.e : '') + '" data-m="' + mIdx + '">' +
+          (EN() ? r.p.en : r.p.name) + ' · ' + z + '/' + (EN() ? man.e.split(' ')[0] : man.n + '宿') + '</span>';
       });
       try {
         if (window.MoonLab) {
@@ -220,6 +250,13 @@ window.SkyTonight = (function () {
       zbox.querySelectorAll('.zz').forEach(function (sp) {
         sp.addEventListener('click', function () {
           const con = this.dataset.con;
+          const mIdx = +this.dataset.m;
+          if (SolarApp.state.constMode === 'china') {
+            if (!SolarApp.state.showConst) $('btn-const').click();
+            StarMap.setMode('china');
+            StarMap.showMansion(mIdx);
+            return;
+          }
           if (!con) return;
           if (!SolarApp.state.showConst) $('btn-const').click();
           StarMap.highlight(con);
@@ -340,6 +377,54 @@ window.SkyTonight = (function () {
         URL.revokeObjectURL(a.href);
         toast(t8('ui.csvOk', '📄 观测数据已导出为 CSV'));
       });
+      // v9.0 C1: 全年星历导出（逐月 1 日）
+      (function bindEph() {
+        const bodySel = $('eph-body'), yearSel = $('eph-year');
+        if (!bodySel) return;
+        const bodies = [
+          { k: 'sun', n: '太阳' }, { k: 'moon', n: '月球' },
+          { k: 'mercury', n: '水星' }, { k: 'venus', n: '金星' }, { k: 'mars', n: '火星' },
+          { k: 'jupiter', n: '木星' }, { k: 'saturn', n: '土星' }
+        ];
+        bodySel.innerHTML = bodies.map(function (b) {
+          return '<option value="' + b.k + '">' + (EN() ? b.k : b.n) + '</option>';
+        }).join('');
+        const y0 = new Date().getUTCFullYear();
+        let ys = '';
+        for (let y = y0 - 2; y <= y0 + 14; y++) ys += '<option value="' + y + '"' + (y === y0 ? ' selected' : '') + '>' + y + '</option>';
+        yearSel.innerHTML = ys;
+        $('btn-eph').addEventListener('click', function () {
+          const key = bodySel.value;
+          const year = +yearSel.value;
+          const name = EN() ? key : (bodies.find(function (b) { return b.k === key; }) || {}).n;
+          let csv = '\uFEFF' + (EN()
+            ? 'date(UTC),ecliptic_lon_deg,ecliptic_lat_deg,dist_AU,elongation_deg,zodiac,azimuth_deg,altitude_deg\n'
+            : '日期(UTC),地心黄经(°),黄纬(°),距离(AU),距角(°),星座,方位角(°),高度角(°)\n');
+          for (let m = 0; m < 12; m++) {
+            const days = (Date.UTC(year, m, 1, 12) - Date.UTC(2000, 0, 1, 12)) / 86400000;
+            let g;
+            if (key === 'sun') g = sunEcl(days);
+            else if (key === 'moon') g = moonEcl(days);
+            else {
+              const p = PLANETS.find(function (q) { return q.key === key; });
+              g = geocentricEcl(p, days);
+            }
+            const lon = ((g.lon / D2R) % 360 + 360) % 360;
+            let elong = ((g.lon - sunEcl(days).lon) / D2R % 360 + 360) % 360;
+            if (key === 'sun') elong = 0;
+            const h = eclToHoriz(g.lon, g.lat, days);
+            const zodiac = ZODIAC_SIGNS[Math.floor(lon / 30)];
+            csv += [year + '-' + pad2(m + 1) + '-01', lon.toFixed(2), (g.lat / D2R).toFixed(2),
+              g.dist.toFixed(4), elong.toFixed(2), zodiac, h.az.toFixed(1), h.alt.toFixed(1)].join(',') + '\n';
+          }
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+          a.download = 'ephemeris-' + name + '-' + year + '.csv';
+          a.click();
+          URL.revokeObjectURL(a.href);
+          toast(t8('ui.ephOk', '📅 全年星历已导出（逐月 12 行）'));
+        });
+      })();
     }
     if (!timer) {
       if (location.search.indexOf('novx') >= 0) { draw(); return; } // 无头截图：单帧

@@ -473,7 +473,7 @@ function restoreProceduralTextures() {
 }
 
 /* ================= 模态框 ================= */
-const MODALS = ['modal-size', 'modal-science', 'modal-help', 'modal-tours', 'modal-badges', 'modal-compare', 'modal-eclipse', 'modal-starlife', 'modal-transit', 'modal-meteors', 'modal-sky', 'modal-moon', 'modal-calendar', 'modal-quiz'];
+const MODALS = ['modal-size', 'modal-science', 'modal-help', 'modal-tours', 'modal-badges', 'modal-compare', 'modal-eclipse', 'modal-starlife', 'modal-transit', 'modal-meteors', 'modal-sky', 'modal-moon', 'modal-calendar', 'modal-quiz', 'modal-gravity'];
 function closeAllModals() {
   MODALS.forEach(function (id) { $(id).classList.add('hidden'); });
 }
@@ -597,7 +597,7 @@ function savePrefs() {
       slider: +$('speed-slider').value,
       showOrbits: state.showOrbits, showLabels: state.showLabels,
       showBelt: state.showBelt, bloom: state.bloom,
-      bgIndex: state.bgIndex, hz: state.hz
+      bgIndex: state.bgIndex, hz: state.hz, constMode: state.constMode
     }));
   } catch (e) { }
 }
@@ -612,6 +612,10 @@ function loadPrefs() {
     if (p.bloom === false) { state.bloom = false; $('tg-bloom').checked = false; }
     if (typeof p.bgIndex === 'number' && BG_PRESETS[p.bgIndex]) { state.bgIndex = p.bgIndex; applyBg(); }
     if (p.hz === true) { state.hz = true; $('btn-hz').classList.add('active'); if (hzRing) hzRing.visible = true; }
+    if (typeof p.constMode === 'string') {
+      state.constMode = p.constMode;
+      if (p.constMode !== 'off') applyConstModePref();
+    }
   } catch (e) { }
 }
 ['tg-orbits', 'tg-labels', 'tg-belt', 'tg-bloom'].forEach(function (id) {
@@ -709,10 +713,15 @@ bindModal('btn-sky', 'modal-sky');
 bindModal('btn-moon', 'modal-moon');
 bindModal('btn-cal', 'modal-calendar');
 bindModal('btn-quiz', 'modal-quiz');
+bindModal('btn-gravity', 'modal-gravity');
 $('btn-const').addEventListener('click', function () {
-  StarMap.toggle(!state.showConst);
-  this.classList.toggle('active', state.showConst);
-  toast(state.showConst ? t8('ui.constOn', '⭐ 已显示星座连线与黄道圈') : t8('ui.constOff', '已隐藏星座'));
+  // v9.0 三态循环：关 → 西方星座 → 中国星官 → 关
+  const next = state.constMode === 'off' ? 'west' : state.constMode === 'west' ? 'china' : 'off';
+  StarMap.setMode(next);
+  this.classList.toggle('active', next !== 'off');
+  toast(next === 'west' ? t8('ui.constOn', '⭐ 已显示星座连线与黄道圈')
+    : next === 'china' ? t8('ui.constCn', '🏯 中国星官：二十八宿驿站链——月亮每晚歇一宿')
+    : t8('ui.constOff', '已隐藏星座'));
   savePrefs();
 });
 $('btn-axis').addEventListener('click', function () {
@@ -720,6 +729,16 @@ $('btn-axis').addEventListener('click', function () {
   this.classList.toggle('active', state.showAxis);
   (window.__axisLines || []).forEach(function (l) { l.visible = state.showAxis; });
   savePrefs();
+});
+/* v9.0 星座层模式保存/恢复 */
+function applyConstModePref() {
+  if (state.constMode && state.constMode !== 'off') {
+    StarMap.setMode(state.constMode);
+    $('btn-const').classList.add('active');
+  }
+}
+window.addEventListener('solar-lang', function () {
+  applyConstModePref();
 });
 /* v7.5 首次访问向导：三步提示（localStorage 记忆） */
 function firstVisitGuide() {

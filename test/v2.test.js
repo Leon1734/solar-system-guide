@@ -6,9 +6,9 @@ const vm = require('vm');
 const ctx = {};
 vm.createContext(ctx);
 const src = fs.readFileSync(__dirname + '/../js/data.js', 'utf8') +
-  '\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES };';
+  '\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS };';
 vm.runInContext(src, ctx);
-const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES } = ctx.__x;
+const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS } = ctx.__x;
 
 const D2R = Math.PI / 180;
 const TAU = Math.PI * 2;
@@ -245,8 +245,8 @@ console.log((conOk ? '✅' : '❌') + ' 星座连线索引全部合法');
 conOk ? pass++ : fail++;
 // 天文日历：条数/日期合法/时间范围/阿波菲斯在列
 check('日历条数 ≥ 20', ASTRO_EVENTS.length >= 20 ? 1 : 0, 1, 0);
-const evOk = ASTRO_EVENTS.every(e => /^\d{4}-\d{2}-\d{2}$/.test(e.d) && +e.d.slice(0, 4) >= 1980 && +e.d.slice(0, 4) <= 2070 && e.n && e.t);
-console.log((evOk ? '✅' : '❌') + ' 日历日期与文案合法');
+const evOk = ASTRO_EVENTS.every(e => /^\d{4}-\d{2}-\d{2}$/.test(e.d) && +e.d.slice(0, 4) >= 1000 && +e.d.slice(0, 4) <= 2070 && e.n && e.t);
+console.log((evOk ? '✅' : '❌') + ' 日历日期与文案合法（下限 1000 年——容纳天关客星等史料条目）');
 evOk ? pass++ : fail++;
 check('日历含阿波菲斯 2029', ASTRO_EVENTS.some(e => e.d === '2029-04-13') ? 1 : 0, 1, 0);
 // 题库：课程 14 题 + 扩展 ≥ 8，答案索引合法
@@ -349,6 +349,65 @@ const J2000T = Date.UTC(2000, 0, 1, 12);
   const h = eclToHorizTest(90 * D2R3, 66.5607 * D2R3, 9000, -33.87, 151.21);
   check('南半球天极在地平线下 [°]', h.alt, -33.87, 0.5);
 }
+
+console.log('\nv9 二十八宿/史料/辐射点/弹弓物理检查：');
+// 二十八宿：28 项、四象各 7、坐标合法、文案完整
+const mmOk = CONST_MANSIONS.length === 28 &&
+  ['东方青龙', '北方玄武', '西方白虎', '南方朱雀'].every(img =>
+    CONST_MANSIONS.filter(m => m.img === img).length === 7) &&
+  CONST_MANSIONS.every(m => m.ra >= 0 && m.ra < 24 && Math.abs(m.dec) <= 90 && m.n && m.meaning && m.star);
+console.log((mmOk ? '✅' : '❌') + ' 二十八宿：28 项、四象各 7、坐标文案合法');
+mmOk ? pass++ : fail++;
+// 宿链应大致沿黄经递增（驿站环；允许近似距星的小逆序——如历史上"觜参倒置"）
+// 跳过首尾回绕对（轸176°→角195°是链闭合，+389° 不计入）
+let lonSeqOk = true, prevLon = -1, maxJump = 0;
+const EPS2 = 23.4393 * D2R3;
+CONST_MANSIONS.forEach((m, i, arr) => {
+  const lon = ((Math.atan2(Math.sin(m.ra * 15 * D2R3) * Math.cos(EPS2) - Math.tan(m.dec * D2R3) * Math.sin(EPS2), Math.cos(m.ra * 15 * D2R3)) / D2R3) % 360 + 360) % 360;
+  m.__lonN = lon;
+});
+CONST_MANSIONS.forEach(function (m, i) {
+  if (i === 0) { prevLon = m.__lonN; return; }
+  let d = m.__lonN - prevLon;
+  const wrapClose = prevLon > 300 && m.__lonN < 260; // 首尾回绕（轸→角）
+  if (wrapClose) d = m.__lonN + 360 - prevLon;
+  if (d > 5 && d < 355) {
+    maxJump = Math.max(maxJump, d);
+    if (d > 40) lonSeqOk = false; // 允许小逆序与近似坐标波动（井→鬼距星近似差 34°），禁止 >40° 大跳跃
+  }
+  prevLon = m.__lonN;
+});
+console.log((lonSeqOk ? '✅' : '❌') + ' 二十八宿链大致沿黄道（最大站间距 ' + maxJump.toFixed(0) + '°，回绕闭合除外）');
+lonSeqOk ? pass++ : fail++;
+// 史料：1054 事件 + cn 引文；哈雷 2061 cn
+const ev1054 = ASTRO_EVENTS.find(e => e.d === '1054-07-04');
+const cnOk = ev1054 && ev1054.cn && ev1054.cn.indexOf('宋史') >= 0 &&
+  ASTRO_EVENTS.find(e => e.d === '2061-07-28' && e.cn);
+console.log((cnOk ? '✅' : '❌') + ' 天象史料：天关客星 + 哈雷古回归记载');
+cnOk ? pass++ : fail++;
+// 流星雨辐射点坐标合法
+const radOk2 = METEOR_SHOWERS.every(s => s.ra >= 0 && s.ra < 24 && Math.abs(s.dec) <= 90);
+console.log((radOk2 ? "✅" : "❌") + " 流星雨辐射点赤经赤纬合法");
+radOk2 ? pass++ : fail++;
+// 弹弓物理（与 gravity.js 同式）
+function sling(b, side, K, P) {
+  const turn = 2 * Math.atan(K / (b * b));
+  const A = 60 * D2R3;
+  const uin = { x: Math.sin(A), y: -Math.cos(A) };
+  const s2 = side === 'back' ? 1 : -1;
+  const c = Math.cos(s2 * turn), si = Math.sin(s2 * turn);
+  const uout = { x: uin.x * c - uin.y * si, y: uin.x * si + uin.y * c };
+  const vin = Math.hypot(uin.x, P + uin.y);
+  const vout = Math.hypot(uout.x, P + uout.y);
+  return { turnDeg: turn / D2R, dv: vout - vin, gainPct: (vout - vin) / vin * 100 };
+}
+const gb = sling(1.0, 'back', 1.2, 1.0);
+const gf = sling(1.0, 'front', 1.2, 1.0);
+const ge = sling(1.0, 'back', 0.15, 0.30);
+check('木星后方掠过增益 [%]', gb.gainPct, 96, 25);
+check('木星前方掠过损耗为负', gf.dv < 0 ? 1 : 0, 1, 0);
+check('地球弹弓增益 < 20%（微弱一推）', ge.gainPct < 20 ? 1 : 0, 1, 0);
+check('转弯角随 b 增大而减小', sling(2.0, 'back', 1.2, 1.0).turnDeg < gb.turnDeg ? 1 : 0, 1, 0);
 
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

@@ -32,6 +32,7 @@ const state = {
   bgIndex: 0,
   hz: false,        // v4.0 宜居带叠加层
   showAxis: true,   // v7.5 自转轴虚线（金星/天王星等高倾角行星）
+  constMode: 'off', // v9.0 星座层模式 off/west/china
   sys: 'solar',     // v4.0 当前系统（'solar' | EXOSYSTEMS key）
   sysStartDays: 0,
   quality: 2        // v4.0 自适应画质等级 2=全 1=省 0=最低

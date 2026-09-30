@@ -106,11 +106,83 @@ window.StarMap = (function () {
 
     group.visible = state.showConst;
     scene.add(group);
+    buildChinese();
   }
+
+  /* v9.0 中国星官模式：二十八宿驿站链 + 宿名标签 */
+  let cnGroup = null, cnLabels = [], cnLineMat = null;
+  function buildChinese() {
+    if (cnGroup) return;
+    cnGroup = new THREE.Group();
+    const pts = CONST_MANSIONS.map(function (m) {
+      const v = new THREE.Vector3();
+      raDecToScene(m.ra, m.dec, v);
+      return v;
+    });
+    // 宿链（闭合）：月亮的 28 站路线
+    const linePts = [];
+    for (let i = 0; i <= pts.length; i++) {
+      const a = pts[i % pts.length];
+      linePts.push(a.x, a.y, a.z);
+    }
+    cnLineMat = new THREE.LineBasicMaterial({
+      color: 0xd8a86a, transparent: true, opacity: 0.5, depthWrite: false
+    });
+    const lg = new THREE.BufferGeometry();
+    lg.setAttribute('position', new THREE.Float32BufferAttribute(linePts, 3));
+    cnGroup.add(new THREE.Line(lg, cnLineMat));
+    // 距星点 + 宿名标签
+    pts.forEach(function (v, i) {
+      const m = CONST_MANSIONS[i];
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: T_DOT, color: 0xffd9a0, transparent: true, opacity: 0.95, depthWrite: false
+      }));
+      sp.position.copy(v);
+      sp.scale.set(6.5, 6.5, 1);
+      cnGroup.add(sp);
+      const el = document.createElement('div');
+      el.className = 'body-label star-label cn-label';
+      el.textContent = (I18N && I18N.lang === 'en') ? (m.n + ' · ' + m.img.split('').pop()) : m.n + '宿';
+      el.style.display = 'none';
+      el.addEventListener('click', function (e) {
+        e.stopPropagation();
+        showMansion(i);
+      });
+      labelsRoot.appendChild(el);
+      cnLabels.push({ pos: v.clone(), el: el });
+    });
+    cnGroup.visible = state.constMode === 'china';
+    scene.add(cnGroup);
+  }
+
+  /* v9.0 宿卡（复用神话模态框） */
+  function showMansion(idx) {
+    const m = CONST_MANSIONS[idx];
+    if (!m) return;
+    const en = window.I18N && I18N.lang === 'en';
+    document.getElementById('const-h').textContent = '🏯 ' + (en ? m.e : m.n + '宿') + '（' + m.img + '）';
+    document.getElementById('con-story').textContent =
+      (en ? 'The ' + (idx + 1) + 'th of 28 lunar mansions — one night’s inn for the Moon on its monthly journey. ' : '二十八宿的第 ' + (idx + 1) + ' 站——月亮每晚在这里歇一脚，约 27.3 天走完一圈。') +
+      m.meaning;
+    document.getElementById('con-star').textContent = '⭐ ' + t8b('距星：') + m.star;
+    document.getElementById('modal-constellation').classList.remove('hidden');
+  }
+  function t8b(fb) { return (window.I18N && I18N.lang === 'en') ? 'Determinant star: ' : fb; }
 
   function update() {
     if (!state.showConst || !group) return;
     camera.getWorldPosition(camTmp);
+    const cnOn = state.constMode === 'china';
+    cnLabels.forEach(function (L) {
+      const d = camTmp.distanceTo(L.pos);
+      if (!cnOn || d >= 95000) { L.el.style.display = 'none'; return; }
+      const p = L.pos.clone().project(camera);
+      const vis = p.z < 1 && Math.abs(p.x) < 1.05 && Math.abs(p.y) < 1.05;
+      L.el.style.display = vis ? '' : 'none';
+      if (!vis) return;
+      L.el.style.left = ((p.x * 0.5 + 0.5) * window.innerWidth) + 'px';
+      L.el.style.top = ((-p.y * 0.5 + 0.5) * window.innerHeight) + 'px';
+    });
     labels.forEach(function (L) {
       const d = camTmp.distanceTo(L.pos);
       if (d >= 95000) { L.el.style.display = 'none'; return; }
@@ -157,25 +229,47 @@ window.StarMap = (function () {
     document.getElementById('modal-constellation').classList.remove('hidden');
   }
 
-  function toggle(on) {
-    state.showConst = !!on;
-    if (!group && on) build();
-    if (group) {
-      group.visible = !!on;
-      if (!on) labels.forEach(function (L) { L.el.style.display = 'none'; });
+  /* v9.0 三态切换：off / west / china（toggle(on) 兼容旧调用） */
+  let lastMode = 'west';
+  function setMode(mode) {
+    state.constMode = mode;
+    state.showConst = mode !== 'off';
+    if (mode !== 'off') {
+      if (!group) build();
+      group.visible = mode === 'west';
+      if (cnGroup) cnGroup.visible = mode === 'china';
+      lastMode = mode;
+      if (mode === 'west') {
+        lineMat.opacity = 0.32;
+        lineMat.color.setHex(0x6a86c8);
+      }
+    } else if (group) {
+      group.visible = false;
+      if (cnGroup) cnGroup.visible = false;
     }
+    labels.forEach(function (L) {
+      L.el.style.display = (mode === 'west') ? L.el.style.display : 'none';
+    });
+    if (cnGroup && mode !== 'china') cnLabels.forEach(function (L) { L.el.style.display = 'none'; });
+  }
+  function toggle(on) {
+    setMode(on ? lastMode : 'off');
   }
 
   function refreshLang() {
     if (!built) return;
     labels.forEach(function (L) { L.el.remove(); });
     labels = [];
+    cnLabels.forEach(function (L) { L.el.remove(); });
+    cnLabels = [];
+    if (cnGroup) { scene.remove(cnGroup); cnGroup = null; }
     scene.remove(group);
     built = false;
     build();
+    setMode(state.constMode || 'off');
   }
 
-  return { toggle: toggle, update: update, highlight: highlight, refreshLang: refreshLang, showMyth: showMyth, showDeepSky: showDeepSky };
+  return { toggle: toggle, setMode: setMode, update: update, highlight: highlight, refreshLang: refreshLang, showMyth: showMyth, showDeepSky: showDeepSky, showMansion: showMansion };
 })();
 
 /* 自注册：SolarApp 就绪后接入渲染后钩子与语言刷新 */

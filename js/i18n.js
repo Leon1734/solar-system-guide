@@ -29,6 +29,8 @@ window.I18N = (function () {
       ringView: '🛰️ Flying over the rings — spot the Cassini & Encke gaps',
       csvOk: '📄 Sky report exported as CSV', years: 'yr',
       duckView: '🦆 Two-lobed "rubber duck" nucleus — two cometesimals merged in a slow collision, Rosetta’s famous find',
+      constCn: '🏯 Chinese star mansions: the 28-lunar-mansion inn chain — the Moon lodges at one per night',
+      ephOk: '📅 Yearly ephemeris exported (12 rows)',
       noMeteor: 'No major meteor shower nearby',
       below: 'Below the horizon', visible: 'Visible',
       title2: 'Horizon compass · true azimuth & altitude at the simulated moment',
@@ -314,7 +316,14 @@ window.I18N = (function () {
       note: 'Moon phase here follows the simulator’s 27.3-day orbit; it may not match the real-world lunar calendar date'
     },
     qd: { title: '🎲 Daily Question', sub: 'One random question from the whole pool — ⭐ points stack up', next: 'Next ▶' },
-    tl: { hint: 'Drag to travel ±100 years · dots are calendar events' }
+    tl: { hint: 'Drag to travel ±100 years · dots are calendar events' },
+    gr: {
+      left: 'Planet frame: gravity bends v∞ by a turn angle',
+      right: 'Heliocentric frame: planet velocity + relative velocity',
+      gain: 'Trailing pass: the probe steals a sliver of the planet’s momentum — slowed by ~10⁻²⁵, utterly unmeasurable.',
+      loss: 'Leading pass: momentum handed back — braking is navigation too.',
+      zero: 'Too far to matter — close in the approach distance.'
+    }
   };
 
   /* ---------- 静态文本（按元素 id；缓存中文原文以支持往返切换） ---------- */
@@ -348,7 +357,11 @@ window.I18N = (function () {
     'quiz-h': EN.qd.title, 'quiz-sub': EN.qd.sub,
     'tl-hint': EN.tl.hint,
     'btn-duck': '🦆 Duck view',
-    'obs-lbl': '📍 Observer', 'btn-obs-loc': '📡 Locate'
+    'obs-lbl': '📍 Observer', 'btn-obs-loc': '📡 Locate',
+    'btn-gravity': '🚀 Sling', 'gravity-h': '🚀 Gravity Sling Lab',
+    'gravity-sub': 'Speed up without fuel? Swing on a planet’s momentum — how the Voyagers left the Solar System',
+    'eph-lbl': '📅 Yearly ephemeris (1st of each month, 12:00 UTC)', 'btn-eph': '📄 Export year',
+    'btn-install': '⬇️ Install app'
   };
 
   /* ---------- API ---------- */

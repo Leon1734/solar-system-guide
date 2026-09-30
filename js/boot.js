@@ -9,6 +9,25 @@ if (location.protocol === 'https:' || location.hostname === 'localhost' || locat
   }
 }
 
+/* v9.0 PWA 安装引导：捕获 beforeinstallprompt，出现"安装应用"按钮 */
+(function () {
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    const btn = document.getElementById('btn-install');
+    if (btn) btn.classList.remove('hidden');
+  });
+  document.getElementById('btn-install').addEventListener('click', function () {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function () {
+      deferredPrompt = null;
+      document.getElementById('btn-install').classList.add('hidden');
+    });
+  });
+})();
+
 /* v7.0 今日天象提醒：启动 4 秒后提示今天的事件/流星雨峰值 */
 setTimeout(function () {
   if (!window.SolarApp) return;
