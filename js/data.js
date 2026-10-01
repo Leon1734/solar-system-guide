@@ -730,7 +730,7 @@ HELP_ITEMS.push(
  * ============================================================ */
 
 /* 数据版本号：solar-bodies.js 启动时校验，防止浏览器缓存的旧数据与新代码混搭 */
-if (typeof window !== "undefined") window.DATA_VERSION = 14;
+if (typeof window !== "undefined") window.DATA_VERSION = 16;
 
 /* 亮星座（s: 恒星 [赤经小时, 赤纬度]；l: 连线索引；b: 亮星中文名） */
 const CONSTELLATIONS = [
@@ -1093,5 +1093,86 @@ function findOppositions(fromDays, toDays) {
     }
   });
   out.sort(function (a, b) { return a.days - b.days; });
+  return out;
+}
+
+/* ============================================================
+ * v12.0 内行星时刻：大距 + 月相（纯函数，供日历/ICS/测试）
+ * ============================================================ */
+/* 真分离角（有符号）：地心黄经差，东正西负 */
+function _signedElong(p, earth, days) {
+  const eP = _oppHelioRates(earth, days), pP = _oppHelioRates(p, days);
+  let d = Math.atan2(pP.y - eP.y, pP.x - eP.x) - Math.atan2(-eP.y, -eP.x);
+  d = ((d % 6.2832) + 6.2832) % 6.2832;      // 0..2π
+  if (d > Math.PI) d -= 6.2832;              // -π..π（东正西负）
+  return d;
+}
+/* 大距：内行星（水星/金星）距角极值（东大距=正峰，西大距=负谷） */
+function findElongations(fromDays, toDays) {
+  const targets = ['mercury', 'venus'];
+  const earth = PLANETS.find(function (p) { return p.key === 'earth'; });
+  const out = [];
+  targets.forEach(function (key) {
+    const p = PLANETS.find(function (q) { return q.key === key; });
+    let prev = null, rising = null;
+    for (let d = fromDays; d <= toDays; d += 1) {
+      const e = _signedElong(p, earth, d);
+      if (prev === null) { prev = e; rising = null; continue; } // 恢复扫描不预设方向，避免峰后下降段误判为峰
+      if (e > prev) {
+        if (rising === false && prev < -0.2) { // 负谷 → 西大距
+          out.push({ key: key, name: p.name, en: p.en, type: 'west',
+            deg: -prev * 180 / Math.PI, days: d - 0.5 });
+          d += 40; prev = null; rising = null; continue;
+        }
+        rising = true;
+      } else if (e < prev) {
+        if (rising === true && prev > 0.2) {   // 正峰 → 东大距
+          out.push({ key: key, name: p.name, en: p.en, type: 'east',
+            deg: prev * 180 / Math.PI, days: d - 0.5 });
+          d += 40; prev = null; rising = null; continue;
+        }
+        rising = false;
+      }
+      prev = e;
+    }
+  });
+  out.sort(function (a, b) { return a.days - b.days; });
+  return out;
+}
+/* 月相：月球黄经（Meeus 简式，与 solar-core.realMoonLonRad 同式——data.js 先行加载故本地实现） */
+function _moonLonDeg(days) {
+  const R = Math.PI / 180;
+  const Mm = (134.963 + 13.064993 * days) * R;
+  const Ms = (357.529 + 0.98560028 * days) * R;
+  const D = (297.850 + 12.190749 * days) * R;
+  let lon = 218.316 + 13.176396 * days
+    + 6.289 * Math.sin(Mm) + 1.274 * Math.sin(2 * D - Mm) + 0.658 * Math.sin(2 * D)
+    + 0.214 * Math.sin(2 * Mm) - 0.186 * Math.sin(Ms) - 0.059 * Math.sin(2 * D - 2 * Mm)
+    - 0.057 * Math.sin(2 * D - Ms - Mm) + 0.053 * Math.sin(2 * D + Mm) + 0.046 * Math.sin(2 * D - Ms)
+    - 0.041 * Math.sin(Mm - Ms) - 0.035 * Math.sin(D) - 0.031 * Math.sin(Mm + Ms);
+  return ((lon % 360) + 360) % 360;
+}
+function _sunLonDegS(days) {
+  const M = (357.529 + 0.98560028 * days) * Math.PI / 180;
+  let lon = 280.459 + 0.98564736 * days + 1.915 * Math.sin(M) + 0.020 * Math.sin(2 * M);
+  return ((lon % 360) + 360) % 360;
+}
+/* 新月（日月黄经差穿越 0°）/ 满月（穿越 180°），线性插值求精确时刻 */
+function findMoonPhases(fromDays, toDays) {
+  const out = [];
+  let prevE = null, prevDay = null;
+  for (let d = fromDays; d <= toDays; d += 1) {
+    const E = (_moonLonDeg(d) - _sunLonDegS(d) + 360) % 360;
+    if (prevE !== null) {
+      if (prevE > 300 && E < 60) { // 穿越 360/0 → 新月
+        const t = (360 - prevE) / ((E + 360) - prevE);
+        out.push({ type: 'new', days: prevDay + t });
+      } else if (prevE < 180 && E >= 180) { // 穿越 180 → 满月
+        const t = (180 - prevE) / (E - prevE);
+        out.push({ type: 'full', days: prevDay + t });
+      }
+    }
+    prevE = E; prevDay = d;
+  }
   return out;
 }

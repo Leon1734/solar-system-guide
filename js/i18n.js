@@ -304,7 +304,13 @@ window.I18N = (function () {
     sys: { trappist1: 'TRAPPIST-1 System', proxima: 'Proxima Centauri System', kepler452: 'Kepler-452 System' },
     cal: {
       title: '📅 Astro Calendar', sub: '30+ key events 2020–2061 — click to jump the simulation there',
-      none: 'No events recorded for this year — try another', search: 'Filter by year…'
+      none: 'No events recorded for this year — try another', search: 'Filter by year…',
+      oppDesc: 'Planet, Earth and Sun in a line — visible all night, closest approach, largest disc.',
+      elongE: 'Greatest eastern elongation — look low in the west after dusk; best time for inner planets.',
+      elongW: 'Greatest western elongation — look low in the east before dawn; best time for inner planets.',
+      newMoon: 'Sun and Moon share ecliptic longitude — 0% lit in the Moon Telescope; a solar eclipse if near a node.',
+      fullMoon: 'A round Moon up all night — 100% lit in the Moon Telescope.',
+      icsOk: '📅 Calendar file exported — import it into your phone/desktop calendar'
     },
     moon: {
       title: '🌙 Moon Telescope', sub: 'The real phase at the simulated moment — drag the date to full moon',

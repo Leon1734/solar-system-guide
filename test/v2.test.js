@@ -6,9 +6,9 @@ const vm = require('vm');
 const ctx = {};
 vm.createContext(ctx);
 const src = fs.readFileSync(__dirname + '/../js/data.js', 'utf8') +
-  "\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS, findOppositions: findOppositions };";
+  "\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS, findOppositions: findOppositions, findElongations: findElongations, findMoonPhases: findMoonPhases };";
 vm.runInContext(src, ctx);
-const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS, findOppositions } = ctx.__x;
+const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS, findOppositions, findElongations, findMoonPhases } = ctx.__x;
 
 const D2R = Math.PI / 180;
 const TAU = Math.PI * 2;
@@ -469,6 +469,42 @@ const cum = mEarth2 * mJup2 * mSat2;
 console.log('   接力链乘积：地球 ×' + mEarth2.toFixed(2) + ' → 木星 ×' + mJup2.toFixed(2) + ' → 土星 ×' + mSat2.toFixed(2) + ' = 累计 ×' + cum.toFixed(2));
 check('接力链累计倍率 > 1.55（超越逃逸）', cum > 1.55 ? 1 : 0, 1, 0);
 check('地球段后掠有正增益且量级最小', mEarth2 > 1.0 && mEarth2 < mJup2 ? 1 : 0, 1, 0);
+
+console.log('\nv12 大距/月相预言机检查：');
+{
+  const el = findElongations((Date.UTC(2024, 0, 1) - J2000T) / 86400000, (Date.UTC(2028, 0, 1) - J2000T) / 86400000);
+  const me = el.filter(e => e.key === 'mercury'), ve = el.filter(e => e.key === 'venus');
+  const meDeg = me.map(e => e.deg), veDeg = ve.map(e => e.deg);
+  const meOk = meDeg.length >= 16 && Math.min.apply(null, meDeg) > 16 && Math.max.apply(null, meDeg) < 30;
+  const veOk = veDeg.length >= 4 && Math.min.apply(null, veDeg) > 44 && Math.max.apply(null, veDeg) < 48;
+  console.log((meOk ? '✅' : '❌') + ' 水星大距 ' + meDeg.length + ' 次，范围 ' + Math.min.apply(null, meDeg).toFixed(1) + '-' + Math.max.apply(null, meDeg).toFixed(1) + '°（真实 18-28）');
+  meOk ? pass++ : fail++;
+  console.log((veOk ? '✅' : '❌') + ' 金星大距 ' + veDeg.length + ' 次，范围 ' + Math.min.apply(null, veDeg).toFixed(1) + '-' + Math.max.apply(null, veDeg).toFixed(1) + '°（真实 45-47，无边界伪峰）');
+  veOk ? pass++ : fail++;
+  // 东西成对（跨 4 年应各有东西）
+  const eastOk = me.some(e => e.type === 'east') && me.some(e => e.type === 'west') && ve.every(e => e.type === 'east' || e.type === 'west');
+  eastOk ? (console.log('✅ 东西大距均有检出'), pass++) : (console.log('❌ 东西大距缺失'), fail++);
+}
+{
+  const mp = findMoonPhases((Date.UTC(2024, 0, 1) - J2000T) / 86400000, (Date.UTC(2025, 0, 1) - J2000T) / 86400000);
+  const news = mp.filter(m => m.type === 'new'), fulls = mp.filter(m => m.type === 'full');
+  const cntOk = news.length >= 12 && news.length <= 14 && fulls.length >= 12 && fulls.length <= 14;
+  console.log((cntOk ? '✅' : '❌') + ' 2024 年新月 ' + news.length + ' / 满月 ' + fulls.length + '（真实各 12-13）');
+  cntOk ? pass++ : fail++;
+  const gaps = [];
+  for (let i = 1; i < news.length; i++) gaps.push(news[i].days - news[i - 1].days);
+  const syn = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+  check('朔望月周期 [天]', syn, 29.53, 0.1);
+  // 锚点：日全食=新月、狼月=满月
+  const t1 = (Date.UTC(2024, 3, 8, 18) - J2000T) / 86400000;
+  const h1 = news.find(m => Math.abs(m.days - t1) < 1);
+  console.log((h1 ? '✅' : '❌') + ' 2024-04-08 日全食锚点为新月' + (h1 ? '（偏差 ' + Math.abs(h1.days - t1).toFixed(2) + ' 天）' : ''));
+  h1 ? pass++ : fail++;
+  const t2 = (Date.UTC(2024, 0, 25, 17) - J2000T) / 86400000;
+  const h2 = fulls.find(m => Math.abs(m.days - t2) < 1);
+  console.log((h2 ? '✅' : '❌') + ' 2024-01-25 狼月锚点为满月' + (h2 ? '（偏差 ' + Math.abs(h2.days - t2).toFixed(2) + ' 天）' : ''));
+  h2 ? pass++ : fail++;
+}
 
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

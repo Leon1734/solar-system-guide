@@ -12,25 +12,55 @@
   function nowDays() { return (Date.now() - Date.UTC(2000, 0, 1, 12)) / 86400000; }
   function dayOf(s) { return (new Date(s + 'T12:00:00Z') - Date.UTC(2000, 0, 1, 12)) / 86400000; }
 
-  /* ---------- B1 日历列表（v11.0：合并冲日预言机结果） ---------- */
+  /* ---------- B1 日历列表（v11 冲日 + v12 大距/月相预言机） ---------- */
   let oppCache = null;
+  function dateStrOf(days) {
+    const dt = new Date(Date.UTC(2000, 0, 1, 12) + days * 86400000);
+    return dt.getUTCFullYear() + '-' + String(dt.getUTCMonth() + 1).padStart(2, '0') + '-' + String(dt.getUTCDate()).padStart(2, '0');
+  }
   function computedEvents() {
     if (oppCache) return oppCache;
     const now = nowDays();
-    oppCache = findOppositions(now - 400, now + 30 * 365.25).map(function (o) {
-      const dt = new Date(Date.UTC(2000, 0, 1, 12) + o.days * 86400000);
-      const dateStr = dt.getUTCFullYear() + '-' + String(dt.getUTCMonth() + 1).padStart(2, '0') + '-' + String(dt.getUTCDate()).padStart(2, '0');
-      return {
-        d: dateStr, n: o.name, en: o.en, computed: true, key: o.key, days: o.days,
+    const out = [];
+    // 冲日（外行星，±30 年窗口）
+    findOppositions(now - 400, now + 30 * 365.25).forEach(function (o) {
+      out.push({
+        d: dateStrOf(o.days), computed: true, key: o.key, days: o.days, icon: '🪐',
+        n: o.name, en: o.en,
         t: t8('cal.oppDesc', '行星、地球与太阳排成一线，整夜可见、距离最近、视直径最大——肉眼+双筒即可观测。')
-      };
+      });
     });
+    // 大距（内行星水/金，±3 年）
+    findElongations(now - 200, now + 3 * 365.25).forEach(function (e) {
+      const east = e.type === 'east';
+      out.push({
+        d: dateStrOf(e.days), computed: true, key: e.key, days: e.days, icon: east ? '🌆' : '🌅',
+        n: e.name + (east ? '东大距' : '西大距') + ' · ' + e.deg.toFixed(0) + '°',
+        en: e.en + ' greatest ' + (east ? 'eastern' : 'western') + ' elongation · ' + e.deg.toFixed(0) + '°',
+        t: east
+          ? t8('cal.elongE', '太阳东侧距角最大——黄昏后在西方低空寻找，内行星最佳观测期。')
+          : t8('cal.elongW', '太阳西侧距角最大——黎明前在东方低空寻找，内行星最佳观测期。')
+      });
+    });
+    // 月相（未来 13 个月 + 近 1 月）
+    findMoonPhases(now - 30, now + 400).forEach(function (m) {
+      const isNew = m.type === 'new';
+      out.push({
+        d: dateStrOf(m.days), computed: true, key: 'moon', days: m.days, icon: isNew ? '🌑' : '🌕',
+        n: isNew ? '新月' : '满月', en: isNew ? 'New Moon' : 'Full Moon',
+        t: isNew
+          ? t8('cal.newMoon', '日月同黄经——月相望远镜看到 0% 的月亮；若恰好对齐交点即发生日食。')
+          : t8('cal.fullMoon', '整夜可见的圆月——月相望远镜 100%；农历十五前后。')
+      });
+    });
+    oppCache = out.sort(function (a, b) { return a.days - b.days; });
     return oppCache;
   }
   function allEvents() {
     const curated = ASTRO_EVENTS.slice();
     const computed = computedEvents().filter(function (o) {
-      // 与手写条目去重：同行星 ±25 天内已有则跳过
+      // 与手写条目去重：同行星 ±25 天内已有则跳过（仅对冲日类有意义）
+      if (o.icon !== '🪐') return true;
       return !curated.some(function (ev) {
         return ev.key === o.key && Math.abs(dayOf(ev.d) - o.days) < 25;
       });
@@ -43,8 +73,9 @@
     const items = allEvents()
       .filter(function (ev) { return !filter || ev.d.indexOf(filter) === 0; })
       .map(function (ev) {
+        const badge = ev.icon ? ev.icon + ' ' : (ev.cn ? '📜 ' : '');
         return '<button class="cal-item' + (ev.computed ? ' computed' : '') + '" data-d="' + ev.d + '">' +
-          '<span class="ci-date">' + (ev.cn ? '📜 ' : '') + (ev.computed ? '🧮 ' : '') + ev.d + '</span>' +
+          '<span class="ci-date">' + badge + ev.d + '</span>' +
           '<span class="ci-body"><span class="ci-name">' + (en && ev.en ? ev.en : ev.n) + '</span>' +
           '<span class="ci-desc">' + ev.t + '</span></span></button>';
       }).join('');
@@ -68,7 +99,7 @@
     const card = $('cal-detail');
     const en = window.I18N && I18N.lang === 'en';
     card.classList.remove('hidden');
-    card.innerHTML = '<b>📅 ' + ev.d + ' · ' + (en && ev.en ? ev.en : ev.n) + (ev.computed ? ' 🧮' : '') + '</b><p>' + ev.t + '</p>' +
+    card.innerHTML = '<b>' + (ev.icon || '📅') + ' ' + ev.d + ' · ' + (en && ev.en ? ev.en : ev.n) + (ev.computed ? ' 🧮' : '') + '</b><p>' + ev.t + '</p>' +
       (ev.cn ? '<p style="color:#ffd9a0; margin-top:6px;">📜 ' + ev.cn + '</p>' : '');
     if (window.TourEngine && TourEngine.active()) TourEngine.exit();
   }

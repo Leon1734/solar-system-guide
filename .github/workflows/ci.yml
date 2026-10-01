@@ -1,0 +1,38 @@
+name: 回归测试 / Regression Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 轨道数学验证 / Orbital math
+        run: node test/orbit.test.js
+      - name: 数据与物理验证 / Data & physics
+        run: node test/v2.test.js
+      - name: 引导完整性静态检查 / Boot integrity
+        run: |
+          node -e "
+          const fs = require('fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const dynamic = new Set(['quiz-finish','tour-wait-bar','row-progress','row-live','row-dist']);
+          const missing = [];
+          fs.readdirSync('js').filter(f => f.endsWith('.js') && !['boot.js','data.js','textures.js'].includes(f)).forEach(f => {
+            const src = fs.readFileSync('js/' + f, 'utf8');
+            const re = /\\$\('([\w-]+)'\)/g; let m;
+            while ((m = re.exec(src))) {
+              if (!dynamic.has(m[1]) && html.indexOf('id=\"' + m[1] + '\"') < 0) missing.push(f + ' -> ' + m[1]);
+            }
+          });
+          if (missing.length) { console.error('missing ids:', missing); process.exit(1); }
+          console.log('id cross-check clean');
+          "
