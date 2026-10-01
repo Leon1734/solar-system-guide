@@ -730,7 +730,7 @@ HELP_ITEMS.push(
  * ============================================================ */
 
 /* 数据版本号：solar-bodies.js 启动时校验，防止浏览器缓存的旧数据与新代码混搭 */
-if (typeof window !== "undefined") window.DATA_VERSION = 16;
+if (typeof window !== "undefined") window.DATA_VERSION = 17;
 
 /* 亮星座（s: 恒星 [赤经小时, 赤纬度]；l: 连线索引；b: 亮星中文名） */
 const CONSTELLATIONS = [
@@ -1174,5 +1174,86 @@ function findMoonPhases(fromDays, toDays) {
     }
     prevE = E; prevDay = d;
   }
+  return out;
+}
+
+/* ============================================================
+ * v13.0 同框天象：行星互合 + 行星合月（地心视分离角局部极小）
+ * ============================================================ */
+function _geoUnitOf(p, earth, days, out) {
+  const eP = _oppHelioRates(earth, days), pP = _oppHelioRates(p, days);
+  const x = pP.x - eP.x, y = pP.y - eP.y, z = pP.z - eP.z;
+  const r = Math.sqrt(x * x + y * y + z * z) || 1e-9;
+  out.x = x / r; out.y = y / r; out.z = z / r;
+}
+function _moonUnit(days, out) {
+  const R = Math.PI / 180;
+  const lon = _moonLonDeg(days) * R;
+  const F = (93.272 + 13.229350 * days) * R;
+  const lat = 5.128 * Math.sin(F) * R;
+  const cl = Math.cos(lat);
+  out.x = cl * Math.cos(lon); out.y = cl * Math.sin(lon); out.z = Math.sin(lat);
+}
+function _sepDegOf(a, b) {
+  const d = a.x * b.x + a.y * b.y + a.z * b.z;
+  return Math.acos(Math.max(-1, Math.min(1, d))) * 180 / Math.PI;
+}
+/* 行星互合：两行星地心视分离角局部极小（< maxSep 度；步进 2 天兼顾性能） */
+function findPlanetConjunctions(fromDays, toDays, maxSep) {
+  maxSep = maxSep || 1.5;
+  const keys = ['mercury', 'venus', 'mars', 'jupiter', 'saturn'];
+  const earth = PLANETS.find(function (p) { return p.key === 'earth'; });
+  const out = [];
+  const a = { x: 0, y: 0, z: 0 }, bv = { x: 0, y: 0, z: 0 };
+  for (let i = 0; i < keys.length; i++) {
+    for (let j = i + 1; j < keys.length; j++) {
+      const p1 = PLANETS.find(function (p) { return p.key === keys[i]; });
+      const p2 = PLANETS.find(function (p) { return p.key === keys[j]; });
+      let prev = null, falling = null;
+      for (let d = fromDays; d <= toDays; d += 2) {
+        _geoUnitOf(p1, earth, d, a); _geoUnitOf(p2, earth, d, bv);
+        const s = _sepDegOf(a, bv);
+        if (prev === null) { prev = s; falling = null; continue; }
+        if (s < prev) { falling = true; }
+        else if (s > prev) {
+          if (falling === true && prev < maxSep) { // 局部极小 → 合
+            out.push({ p1: p1, p2: p2, sepDeg: prev, days: d - 2 });
+            d += 30; prev = null; falling = null; continue;
+          }
+          falling = false;
+        }
+        prev = s;
+      }
+    }
+  }
+  out.sort(function (x, y) { return x.days - y.days; });
+  return out;
+}
+/* 行星合月：月球与行星地心视分离角局部极小（< maxSep 度；水星贴日不出） */
+function findMoonConjunctions(fromDays, toDays, maxSep) {
+  maxSep = maxSep || 4;
+  const keys = ['venus', 'mars', 'jupiter', 'saturn'];
+  const earth = PLANETS.find(function (p) { return p.key === 'earth'; });
+  const out = [];
+  const a = { x: 0, y: 0, z: 0 }, bv = { x: 0, y: 0, z: 0 };
+  keys.forEach(function (key) {
+    const p = PLANETS.find(function (q) { return q.key === key; });
+    let prev = null, falling = null;
+    for (let d = fromDays; d <= toDays; d += 0.5) {
+      _geoUnitOf(p, earth, d, a); _moonUnit(d, bv);
+      const s = _sepDegOf(a, bv);
+      if (prev === null) { prev = s; falling = null; continue; }
+      if (s < prev) { falling = true; }
+      else if (s > prev) {
+        if (falling === true && prev < maxSep) {
+          out.push({ p: p, sepDeg: prev, days: d - 0.5 });
+          d += 5; prev = null; falling = null; continue;
+        }
+        falling = false;
+      }
+      prev = s;
+    }
+  });
+  out.sort(function (x, y) { return x.days - y.days; });
   return out;
 }

@@ -6,9 +6,9 @@ const vm = require('vm');
 const ctx = {};
 vm.createContext(ctx);
 const src = fs.readFileSync(__dirname + '/../js/data.js', 'utf8') +
-  "\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS, findOppositions: findOppositions, findElongations: findElongations, findMoonPhases: findMoonPhases };";
+  "\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS, findOppositions: findOppositions, findElongations: findElongations, findMoonPhases: findMoonPhases, findPlanetConjunctions: findPlanetConjunctions, findMoonConjunctions: findMoonConjunctions };";
 vm.runInContext(src, ctx);
-const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS, findOppositions, findElongations, findMoonPhases } = ctx.__x;
+const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS, findOppositions, findElongations, findMoonPhases, findPlanetConjunctions, findMoonConjunctions } = ctx.__x;
 
 const D2R = Math.PI / 180;
 const TAU = Math.PI * 2;
@@ -504,6 +504,34 @@ console.log('\nv12 大距/月相预言机检查：');
   const h2 = fulls.find(m => Math.abs(m.days - t2) < 1);
   console.log((h2 ? '✅' : '❌') + ' 2024-01-25 狼月锚点为满月' + (h2 ? '（偏差 ' + Math.abs(h2.days - t2).toFixed(2) + ' 天）' : ''));
   h2 ? pass++ : fail++;
+}
+
+console.log('\nv13 同框天象（合）检查：');
+{
+  const pc = findPlanetConjunctions((Date.UTC(2020, 5, 1) - J2000T) / 86400000, (Date.UTC(2027, 5, 1) - J2000T) / 86400000);
+  // 锚点：木土大合 2020-12-21（真实分离 0.1°）
+  const t1 = (Date.UTC(2020, 11, 21) - J2000T) / 86400000;
+  const h1 = pc.find(c => c.p1.key === 'jupiter' && c.p2.key === 'saturn' && Math.abs(c.days - t1) < 4);
+  console.log((h1 ? '✅' : '❌') + ' 木土大合 2020-12-21' + (h1 ? '（预测 ' + new Date(J2000T + h1.days * 86400000).toISOString().slice(0, 10) + '，分离 ' + h1.sepDeg.toFixed(2) + '°）' : ' 未检出'));
+  h1 ? pass++ : fail++;
+  // 锚点：金星合木星 2024-05-23 / 2025-08-12，金星合火星 2026-01-07
+  [['venus', 'jupiter', '2024-05-23'], ['venus', 'jupiter', '2025-08-12'], ['venus', 'mars', '2026-01-07']].forEach(function (a) {
+    const t = (Date.parse(a[2] + 'T12:00Z') - J2000T) / 86400000;
+    const h = pc.find(c => ((c.p1.key === a[0] && c.p2.key === a[1]) || (c.p1.key === a[1] && c.p2.key === a[0])) && Math.abs(c.days - t) < 4);
+    console.log((h ? '✅' : '❌') + ' 合锚点 ' + a[0] + '-' + a[1] + ' ' + a[2] + (h ? '（分离 ' + h.sepDeg.toFixed(2) + '°）' : ' 未检出'));
+    h ? pass++ : fail++;
+  });
+  // 全部 <1.5° 且数量合理
+  const allOk = pc.every(c => c.sepDeg < 1.5) && pc.length >= 30 && pc.length <= 80;
+  console.log((allOk ? '✅' : '❌') + ' 互合 ' + pc.length + ' 条（7 年，全部 <1.5°）');
+  allOk ? pass++ : fail++;
+}
+{
+  const now = (Date.UTC(2026, 9, 1) - J2000T) / 86400000;
+  const mc = findMoonConjunctions(now, now + 90);
+  const ok = mc.length >= 6 && mc.length <= 16 && mc.every(c => c.sepDeg < 4);
+  console.log((ok ? '✅' : '❌') + ' 未来 90 天合月 ' + mc.length + ' 次，全部 <4°');
+  ok ? pass++ : fail++;
 }
 
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');

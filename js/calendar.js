@@ -53,19 +53,69 @@
           : t8('cal.fullMoon', '整夜可见的圆月——月相望远镜 100%；农历十五前后。')
       });
     });
+    // v13 行星互合（±6 年，<1.5°）
+    findPlanetConjunctions(now - 6 * 365.25, now + 6 * 365.25).forEach(function (c) {
+      out.push({
+        d: dateStrOf(c.days), computed: true, key: c.p1.key, days: c.days, icon: '✨', conj: true,
+        n: c.p1.name + '合' + c.p2.name + ' · ' + c.sepDeg.toFixed(1) + '°',
+        en: c.p1.en + '–' + c.p2.en + ' conjunction · ' + c.sepDeg.toFixed(1) + '°',
+        t: t8('cal.conjP', '两颗行星在天空近到同框——肉眼就是一个"双星"，双筒望远镜能看到行星圆面同现。')
+      });
+    });
+    // v13 行星合月（未来 90 天，<4°）
+    findMoonConjunctions(now, now + 90).forEach(function (c) {
+      out.push({
+        d: dateStrOf(c.days), computed: true, key: c.p.key, days: c.days, icon: '🌙', conj: true,
+        n: c.p.name + '合月 · ' + c.sepDeg.toFixed(1) + '°',
+        en: 'Moon near ' + c.p.en + ' · ' + c.sepDeg.toFixed(1) + '°',
+        t: t8('cal.conjM', '夜空最亮的两盏灯同框——月球与行星相距不足 4°，肉眼即可欣赏"星月相伴"。')
+      });
+    });
     oppCache = out.sort(function (a, b) { return a.days - b.days; });
     return oppCache;
   }
   function allEvents() {
     const curated = ASTRO_EVENTS.slice();
     const computed = computedEvents().filter(function (o) {
-      // 与手写条目去重：同行星 ±25 天内已有则跳过（仅对冲日类有意义）
-      if (o.icon !== '🪐') return true;
-      return !curated.some(function (ev) {
-        return ev.key === o.key && Math.abs(dayOf(ev.d) - o.days) < 25;
-      });
+      // 与手写条目去重：冲日按同行星 ±25 天；合现象按 ±15 天（避免与"木土大合"等手写条目重复）
+      if (o.icon === '🪐') {
+        return !curated.some(function (ev) {
+          return ev.key === o.key && Math.abs(dayOf(ev.d) - o.days) < 25;
+        });
+      }
+      if (o.conj) {
+        return !curated.some(function (ev) { return Math.abs(dayOf(ev.d) - o.days) < 15; });
+      }
+      return true;
     });
     return curated.concat(computed).sort(function (a, b) { return a.d < b.d ? -1 : 1; });
+  }
+
+  /* v13 B：未来 90 天速报条 */
+  function renderAlmanac() {
+    const box = $('cal-almanac');
+    if (!box) return;
+    const now = nowDays();
+    const en = window.I18N && I18N.lang === 'en';
+    const upcoming = allEvents()
+      .map(function (ev) { return { ev: ev, dd: ev.days !== undefined ? ev.days : dayOf(ev.d) }; })
+      .filter(function (x) { return x.dd >= now - 1 && x.dd <= now + 90; })
+      .sort(function (a, b) { return a.dd - b.dd; })
+      .slice(0, 6);
+    if (!upcoming.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="alm-title">🔭 ' + t8('cal.almanac', '未来 90 天速报') + '</div>' +
+      '<div class="alm-list">' + upcoming.map(function (x) {
+        const ev = x.ev;
+        const days = Math.round(x.dd - now);
+        const when = days <= 0 ? t8('cal.today', '就在今天') : (en ? 'in ' + days + ' d' : days + ' 天后');
+        return '<button class="alm-item" data-d="' + ev.d + '">' +
+          '<span class="alm-when">' + ev.d.slice(5) + '</span>' +
+          '<span class="alm-name">' + (ev.icon || '') + ' ' + (en && ev.en ? ev.en : ev.n) + '</span>' +
+          '<span class="alm-days">' + when + '</span></button>';
+      }).join('') + '</div>';
+    box.querySelectorAll('.alm-item').forEach(function (b) {
+      b.addEventListener('click', function () { jumpTo(this.dataset.d); });
+    });
   }
   function renderList(filter) {
     const box = $('cal-list');
@@ -139,7 +189,10 @@
       renderList(this.value.trim());
     });
     $('btn-cal').addEventListener('click', function () {
-      setTimeout(function () { renderList($('cal-search').value.trim()); }, 30);
+      setTimeout(function () {
+        renderList($('cal-search').value.trim());
+        renderAlmanac();
+      }, 30);
     });
   }
 
@@ -211,9 +264,11 @@
     buildTimeline();
     $('btn-timeline').addEventListener('click', function () { toggleTimeline(); });
     $('btn-ics').addEventListener('click', exportICS);
+    renderAlmanac();
     window.addEventListener('solar-lang', function () {
       oppCache = null; // 语言切换后重建描述
       renderList($('cal-search') ? $('cal-search').value.trim() : '');
+      renderAlmanac();
       if (!$('timeline').classList.contains('hidden')) buildTimeline();
     });
   }

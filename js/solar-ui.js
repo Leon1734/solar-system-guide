@@ -482,10 +482,14 @@ function bindModal(openBtn, modalId) {
   $(openBtn).addEventListener('click', function () {
     closeAllModals();
     modal.classList.remove('hidden');
+    // 立即启动各实验室（否则轮询有 500ms 空窗，刚打开时的点击会无响应）
     if (modalId === 'modal-size') drawSizeComparison();
     if (modalId === 'modal-transit' && window.TransitLab) TransitLab.start();
     if (modalId === 'modal-meteors' && window.MeteorLab) MeteorLab.start();
     if (modalId === 'modal-starlife' && window.StarLife) StarLife.start();
+    if (modalId === 'modal-gravity' && window.GravityLab) GravityLab.start();
+    if (modalId === 'modal-sky' && window.SkyTonight) SkyTonight.start();
+    if (modalId === 'modal-moon' && window.MoonLab) MoonLab.start();
   });
   modal.querySelectorAll('.modal-close').forEach(function (el) {
     el.addEventListener('click', function () { modal.classList.add('hidden'); });

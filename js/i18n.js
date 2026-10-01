@@ -310,7 +310,10 @@ window.I18N = (function () {
       elongW: 'Greatest western elongation — look low in the east before dawn; best time for inner planets.',
       newMoon: 'Sun and Moon share ecliptic longitude — 0% lit in the Moon Telescope; a solar eclipse if near a node.',
       fullMoon: 'A round Moon up all night — 100% lit in the Moon Telescope.',
-      icsOk: '📅 Calendar file exported — import it into your phone/desktop calendar'
+      icsOk: '📅 Calendar file exported — import it into your phone/desktop calendar',
+      almanac: 'Next 90 days almanac', today: 'today',
+      conjP: 'Two planets within a degree — a naked-eye "double star"; binoculars show both discs together.',
+      conjM: 'The two brightest lights of the night sky side by side — Moon and planet under 4° apart.'
     },
     moon: {
       title: '🌙 Moon Telescope', sub: 'The real phase at the simulated moment — drag the date to full moon',

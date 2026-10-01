@@ -218,12 +218,15 @@ window.GravityLab = (function () {
     $('g-launch').addEventListener('click', function () {
       probeT = 0;
       if (window.Sfx) window.Sfx.launch();
-      if (chain.active) checkChain();
+      if (free.active) checkFree();
+      else if (chain.active) checkChain();
       else checkMission();
     });
     // v11.0 伟大远航接力链
     $('g-chain').addEventListener('click', function () {
       chain.active = !chain.active;
+      if (chain.active) free.active = false;
+      $('g-free').classList.toggle('active', free.active);
       this.classList.toggle('active', chain.active);
       if (chain.active) {
         chain.stage = 0; chain.mult = 1.0;
@@ -234,6 +237,35 @@ window.GravityLab = (function () {
       }
       checkChainUI();
     });
+    // v13 自由接力：任意行星/方向累积速度倍率
+    $('g-free').addEventListener('click', function () {
+      free.active = !free.active;
+      if (free.active) { chain.active = false; $('g-chain').classList.remove('active'); }
+      this.classList.toggle('active', free.active);
+      if (free.active) {
+        free.mult = 1.0; free.reached = false;
+        toast(t8('gr.freeOn', '🎯 自由接力：任意顺序借力，累计速度倍率达到 ×2.0 即达第三宇宙速度！'));
+      }
+      checkChainUI();
+    });
+  }
+
+  /* v13.0 自由接力：任意行星/方向，每次发射按 v出/v入 累积倍率 */
+  const free = { active: false, mult: 1.0, reached: false };
+  function checkFree() {
+    const sres = sim(b, side, planetKey);
+    const m = sres.vout / sres.vin;
+    free.mult *= m;
+    const enough = free.mult >= 2.0;
+    $('g-result').textContent = (m >= 1 ? '✅ ' : '⚠️ ') +
+      t8('gr.freeGain', '本次 ') + '×' + m.toFixed(2) + ' → ' + t8('gr.chainSpeed', '累计 ×') + free.mult.toFixed(2) +
+      (enough ? (window.I18N && I18N.lang === 'en' ? ' — escape speed achieved!' : ' —— 已达第三宇宙速度（逃逸）！') : '');
+    $('g-result').style.color = m >= 1 ? '#9fe8a8' : '#e0a0a0';
+    if (enough && !free.reached) {
+      free.reached = true;
+      if (window.Sfx) window.Sfx.success();
+    } else if (m >= 1 && window.Sfx) window.Sfx.chime();
+    checkChainUI();
   }
 
   /* v11.0 接力链：地球出发 → 木星加速 → 土星冲刺 → 飞出太阳系 */
@@ -277,6 +309,11 @@ window.GravityLab = (function () {
   function checkChainUI() {
     const el = $('g-chain-status');
     if (!el) return;
+    if (free.active) {
+      el.textContent = '🎯 ' + t8('gr.freeStatus', '自由接力 · 累计 ×') + free.mult.toFixed(2) +
+        (free.mult >= 2.0 ? ' ✅' : ' → ' + t8('gr.freeGoal', '目标 ×2.0'));
+      return;
+    }
     if (!chain.active) { el.textContent = ''; return; }
     if (chain.stage >= CHAIN.length) {
       el.textContent = '🏆 ' + t8('gr.chainDone', '伟大远航完成！累计速度倍率 ×') + chain.mult.toFixed(2);
