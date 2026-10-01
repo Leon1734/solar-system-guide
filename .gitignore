@@ -3,7 +3,7 @@ node_modules/
 
 # 测试产物
 test/shots/
-test/baseline/
+
 
 # 系统文件
 Thumbs.db

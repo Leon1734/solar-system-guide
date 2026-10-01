@@ -1039,3 +1039,59 @@ const TOURS = [
   }
 ];
 
+
+/* ============================================================
+ * v11.0 天象预言机：冲日自动检测（纯函数，可测试）
+ * 原理：外行星地心黄经与太阳黄经相差 180° 时为冲；
+ * 逐日步进扫描距角局部极大（>176°）即为冲日
+ * ============================================================ */
+function _oppKeplerSolve(M, e) {
+  let E = M;
+  for (let k = 0; k < 9; k++) {
+    const d = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+    E -= d;
+    if (Math.abs(d) < 1e-9) break;
+  }
+  return E;
+}
+function _oppHelioRates(p, days) {
+  const T = days / 36525, el = p.elements, rt = p.rates;
+  const a = el.a + rt.a * T, e = el.e + rt.e * T;
+  const M = (((el.L + rt.L * T) - (el.w + rt.w * T)) % 360) * (Math.PI / 180);
+  const om = ((el.w + rt.w * T) - (el.O + rt.O * T)) * (Math.PI / 180);
+  const O = (el.O + rt.O * T) * (Math.PI / 180), inc = (el.i + rt.i * T) * (Math.PI / 180);
+  const E = _oppKeplerSolve(((M % 6.2832) + 6.2832) % 6.2832, e);
+  const xp = a * (Math.cos(E) - e), yp = a * Math.sqrt(1 - e * e) * Math.sin(E);
+  const cw = Math.cos(om), sw = Math.sin(om), cO = Math.cos(O), sO = Math.sin(O);
+  const ci = Math.cos(inc), si = Math.sin(inc);
+  return {
+    x: (cw * cO - sw * sO * ci) * xp + (-sw * cO - cw * sO * ci) * yp,
+    y: (cw * sO + sw * cO * ci) * xp + (-sw * sO + cw * cO * ci) * yp,
+    z: (sw * si) * xp + (cw * si) * yp
+  };
+}
+function findOppositions(fromDays, toDays) {
+  const targets = ['mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
+  const earth = PLANETS.find(function (p) { return p.key === 'earth'; });
+  const out = [];
+  targets.forEach(function (key) {
+    const p = PLANETS.find(function (q) { return q.key === key; });
+    let prevSep = -1;
+    for (let d = fromDays; d <= toDays; d += 1) {
+      const eP = _oppHelioRates(earth, d), pP = _oppHelioRates(p, d);
+      let elong = Math.atan2(pP.y - eP.y, pP.x - eP.x) - Math.atan2(-eP.y, -eP.x);
+      elong = ((elong % 6.2832) + 6.2832) % 6.2832;
+      const sep = Math.min(elong, 6.2832 - elong); // 真分离角（合=0，冲=π）
+      if (prevSep >= 0 && prevSep > 3.06 && sep < prevSep && sep > 3.06) {
+        out.push({
+          key: key, name: p.name + '冲日', en: p.en + ' at opposition',
+          days: d - 0.5
+        });
+        d += 100; // 同一冲日附近跳过
+      }
+      prevSep = sep;
+    }
+  });
+  out.sort(function (a, b) { return a.days - b.days; });
+  return out;
+}

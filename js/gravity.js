@@ -218,9 +218,75 @@ window.GravityLab = (function () {
     $('g-launch').addEventListener('click', function () {
       probeT = 0;
       if (window.Sfx) window.Sfx.launch();
-      checkMission();
+      if (chain.active) checkChain();
+      else checkMission();
+    });
+    // v11.0 伟大远航接力链
+    $('g-chain').addEventListener('click', function () {
+      chain.active = !chain.active;
+      this.classList.toggle('active', chain.active);
+      if (chain.active) {
+        chain.stage = 0; chain.mult = 1.0;
+        applyChainStage();
+        toast(t8('gr.chainOn', '🔗 接力链挑战开始——复现旅行者号的伟大远航！'));
+      } else {
+        $('g-chain-status').textContent = '';
+      }
+      checkChainUI();
     });
   }
+
+  /* v11.0 接力链：地球出发 → 木星加速 → 土星冲刺 → 飞出太阳系 */
+  const CHAIN = [
+    { key: 'earth', need: 1.03, text: '地球出发：后掠地球，让速度倍率 ≥ ×1.03（挣脱引力怀抱）', done: '第 1 站完成！虽然只有百分之几，火星转移轨道已到手。' },
+    { key: 'jupiter', need: 1.40, text: '第 2 站木星：后掠木星（b ≤ 1.0），速度倍率累计 ≥ ×1.40', done: '第 2 站完成！木星把你甩向土星轨道——这就是旅行者的路线。' },
+    { key: 'saturn', need: 1.55, text: '第 3 站土星：后掠土星（b ≤ 1.2），累计 ≥ ×1.55 即超越太阳系逃逸速度', done: '🏆 伟大远航完成！你已复现旅行者号的壮举——下一站：星际空间。' }
+  ];
+  const chain = { active: false, stage: 0, mult: 1.0 };
+
+  function applyChainStage() {
+    if (chain.stage >= CHAIN.length) return;
+    const st = CHAIN[chain.stage];
+    planetKey = st.key;
+    side = 'back';
+    document.querySelectorAll('.g-planet').forEach(function (b2) {
+      b2.classList.toggle('active', b2.dataset.p === st.key);
+    });
+    document.querySelectorAll('.g-side').forEach(function (b2) {
+      b2.classList.toggle('active', b2.dataset.s === 'back');
+    });
+  }
+  function checkChain() {
+    if (!chain.active || chain.stage >= CHAIN.length) return;
+    const st = CHAIN[chain.stage];
+    const sres = sim(b, side, planetKey);
+    const stageMult = sres.vout / sres.vin;
+    if (planetKey !== st.key || side !== 'back' || stageMult < st.need) {
+      $('g-result').textContent = t8('gr.chainFail', '❌ 速度不足（×' + (chain.mult * stageMult).toFixed(2) + '）——调小接近距离 b，保持后方掠过再试。');
+      $('g-result').style.color = '#e0a0a0';
+      return;
+    }
+    chain.mult *= stageMult;
+    $('g-result').textContent = '✅ ' + st.done + '（累计 ×' + chain.mult.toFixed(2) + '）';
+    $('g-result').style.color = '#9fe8a8';
+    if (window.Sfx) window.Sfx.success();
+    chain.stage++;
+    if (chain.stage < CHAIN.length) applyChainStage();
+    checkChainUI();
+  }
+  function checkChainUI() {
+    const el = $('g-chain-status');
+    if (!el) return;
+    if (!chain.active) { el.textContent = ''; return; }
+    if (chain.stage >= CHAIN.length) {
+      el.textContent = '🏆 ' + t8('gr.chainDone', '伟大远航完成！累计速度倍率 ×') + chain.mult.toFixed(2);
+      return;
+    }
+    const st = CHAIN[chain.stage];
+    el.textContent = '🔗 ' + t8('gr.chainStage', '第 ') + (chain.stage + 1) + '/' + CHAIN.length + t8('gr.chainStation', '站') +
+      ' · ' + t8('gr.chainSpeed', '累计 ×') + chain.mult.toFixed(2) + (EN() ? ' → need ×' + st.need : ' → 需 ×' + st.need);
+  }
+  function EN() { return window.I18N && I18N.lang === 'en'; }
 
   function start() {
     if (!ctx) {
@@ -241,5 +307,5 @@ window.GravityLab = (function () {
     else if (!timer) start();
   }, 500);
 
-  return { start: start, stop: stop, sim: sim };
+  return { start: start, stop: stop, sim: sim, resetChain: function () { chain.stage = 0; chain.mult = 1.0; checkChainUI(); } };
 })();

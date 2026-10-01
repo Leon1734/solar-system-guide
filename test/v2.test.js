@@ -6,9 +6,9 @@ const vm = require('vm');
 const ctx = {};
 vm.createContext(ctx);
 const src = fs.readFileSync(__dirname + '/../js/data.js', 'utf8') +
-  '\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS };';
+  "\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS, findOppositions: findOppositions };";
 vm.runInContext(src, ctx);
-const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS } = ctx.__x;
+const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS, findOppositions } = ctx.__x;
 
 const D2R = Math.PI / 180;
 const TAU = Math.PI * 2;
@@ -399,7 +399,7 @@ function sling(b, side, K, P) {
   const uout = { x: uin.x * c - uin.y * si, y: uin.x * si + uin.y * c };
   const vin = Math.hypot(uin.x, P + uin.y);
   const vout = Math.hypot(uout.x, P + uout.y);
-  return { turnDeg: turn / D2R, dv: vout - vin, gainPct: (vout - vin) / vin * 100 };
+  return { turnDeg: turn / D2R3, dv: vout - vin, gainPct: (vout - vin) / vin * 100, vinMag: vin, voutMag: vout };
 }
 const gb = sling(1.0, 'back', 1.2, 1.0);
 const gf = sling(1.0, 'front', 1.2, 1.0);
@@ -443,6 +443,32 @@ console.log('\nv10 水星凌日锚点检查（2032-11-13）：');
   }
   check('2032-11-13 水星凌日最小地心夹角 [°]', minSep, 0.15, 0.25);
 }
+
+console.log('\nv11 冲日预言机/接力链检查：');
+// 冲日锚点（真实天象）
+const d0opp = (Date.UTC(2024, 0, 1) - J2000T) / 86400000;
+const d1opp = (Date.UTC(2028, 0, 1) - J2000T) / 86400000;
+const ops = findOppositions(d0opp, d1opp);
+[['mars', '2025-01-16'], ['jupiter', '2024-12-07'], ['saturn', '2024-09-08'], ['saturn', '2025-09-21'], ['mars', '2027-02-19']].forEach(([key, date]) => {
+  const target = (Date.parse(date + 'T12:00Z') - J2000T) / 86400000;
+  const hit = ops.filter(o => o.key === key && Math.abs(o.days - target) < 5);
+  const ok = hit.length > 0;
+  console.log((ok ? '✅' : '❌') + ' 冲日预言：' + key + ' ' + date + (hit.length ? '（预测 ' + new Date(J2000T + hit[0].days * 86400000).toISOString().slice(0, 10) + '）' : '（未检出）'));
+  ok ? pass++ : fail++;
+});
+check('4 年冲日总数合理（5 行星×~4 年 ≈ 17）', ops.length >= 14 && ops.length <= 22 ? 1 : 0, 1, 0);
+// 接力链物理：三段乘积可达逃逸（倍率 = v出/v入）
+function slingMult(b, side, K, P) {
+  const s = sling(b, side, K, P);
+  return s.voutMag / s.vinMag;
+}
+const mEarth2 = slingMult(0.6, 'back', 0.15, 0.30);
+const mJup2 = slingMult(0.6, 'back', 1.2, 1.0);
+const mSat2 = slingMult(0.7, 'back', 0.70, 0.72);
+const cum = mEarth2 * mJup2 * mSat2;
+console.log('   接力链乘积：地球 ×' + mEarth2.toFixed(2) + ' → 木星 ×' + mJup2.toFixed(2) + ' → 土星 ×' + mSat2.toFixed(2) + ' = 累计 ×' + cum.toFixed(2));
+check('接力链累计倍率 > 1.55（超越逃逸）', cum > 1.55 ? 1 : 0, 1, 0);
+check('地球段后掠有正增益且量级最小', mEarth2 > 1.0 && mEarth2 < mJup2 ? 1 : 0, 1, 0);
 
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

@@ -12,15 +12,39 @@
   function nowDays() { return (Date.now() - Date.UTC(2000, 0, 1, 12)) / 86400000; }
   function dayOf(s) { return (new Date(s + 'T12:00:00Z') - Date.UTC(2000, 0, 1, 12)) / 86400000; }
 
-  /* ---------- B1 日历列表 ---------- */
+  /* ---------- B1 日历列表（v11.0：合并冲日预言机结果） ---------- */
+  let oppCache = null;
+  function computedEvents() {
+    if (oppCache) return oppCache;
+    const now = nowDays();
+    oppCache = findOppositions(now - 400, now + 30 * 365.25).map(function (o) {
+      const dt = new Date(Date.UTC(2000, 0, 1, 12) + o.days * 86400000);
+      const dateStr = dt.getUTCFullYear() + '-' + String(dt.getUTCMonth() + 1).padStart(2, '0') + '-' + String(dt.getUTCDate()).padStart(2, '0');
+      return {
+        d: dateStr, n: o.name, en: o.en, computed: true, key: o.key, days: o.days,
+        t: t8('cal.oppDesc', '行星、地球与太阳排成一线，整夜可见、距离最近、视直径最大——肉眼+双筒即可观测。')
+      };
+    });
+    return oppCache;
+  }
+  function allEvents() {
+    const curated = ASTRO_EVENTS.slice();
+    const computed = computedEvents().filter(function (o) {
+      // 与手写条目去重：同行星 ±25 天内已有则跳过
+      return !curated.some(function (ev) {
+        return ev.key === o.key && Math.abs(dayOf(ev.d) - o.days) < 25;
+      });
+    });
+    return curated.concat(computed).sort(function (a, b) { return a.d < b.d ? -1 : 1; });
+  }
   function renderList(filter) {
     const box = $('cal-list');
     const en = window.I18N && I18N.lang === 'en';
-    const items = ASTRO_EVENTS
+    const items = allEvents()
       .filter(function (ev) { return !filter || ev.d.indexOf(filter) === 0; })
       .map(function (ev) {
-        return '<button class="cal-item" data-d="' + ev.d + '">' +
-          '<span class="ci-date">' + (ev.cn ? '📜 ' : '') + ev.d + '</span>' +
+        return '<button class="cal-item' + (ev.computed ? ' computed' : '') + '" data-d="' + ev.d + '">' +
+          '<span class="ci-date">' + (ev.cn ? '📜 ' : '') + (ev.computed ? '🧮 ' : '') + ev.d + '</span>' +
           '<span class="ci-body"><span class="ci-name">' + (en && ev.en ? ev.en : ev.n) + '</span>' +
           '<span class="ci-desc">' + ev.t + '</span></span></button>';
       }).join('');
@@ -31,21 +55,51 @@
   }
 
   function jumpTo(dateStr) {
-    const ev = ASTRO_EVENTS.find(function (e) { return e.d === dateStr; });
+    const ev = allEvents().find(function (e) { return e.d === dateStr; });
     if (!ev) return;
     const A = window.SolarApp;
     if (A.state.sys !== 'solar') A.setSystem('solar');
     A.setDate(ev.d);
     A.setPaused(false);
-    if (ev.cam && ev.cam.follow) A.goto(ev.cam.follow, undefined, 2.6);
+    if (ev.computed && ev.key) A.goto(ev.key, undefined, 2.6);
+    else if (ev.cam && ev.cam.follow) A.goto(ev.cam.follow, undefined, 2.6);
     else if (ev.cam && ev.cam.origin) A.gotoOrigin(ev.cam.origin, 2.4);
     // 解说卡
     const card = $('cal-detail');
     const en = window.I18N && I18N.lang === 'en';
     card.classList.remove('hidden');
-    card.innerHTML = '<b>📅 ' + ev.d + ' · ' + (en && ev.en ? ev.en : ev.n) + '</b><p>' + ev.t + '</p>' +
+    card.innerHTML = '<b>📅 ' + ev.d + ' · ' + (en && ev.en ? ev.en : ev.n) + (ev.computed ? ' 🧮' : '') + '</b><p>' + ev.t + '</p>' +
       (ev.cn ? '<p style="color:#ffd9a0; margin-top:6px;">📜 ' + ev.cn + '</p>' : '');
     if (window.TourEngine && TourEngine.active()) TourEngine.exit();
+  }
+
+  /* ---------- v11.0 C：ICS 导出（导入手机/电脑日历） ---------- */
+  function toICSDate(dateStr) { return dateStr.replace(/-/g, ''); }
+  function exportICS() {
+    const evs = allEvents();
+    const en = window.I18N && I18N.lang === 'en';
+    let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//SolarGuide//CN\r\nCALSCALE:GREGORIAN\r\n';
+    evs.forEach(function (ev, i) {
+      ics += 'BEGIN:VEVENT\r\n' +
+        'UID:solar-guide-' + i + '-' + ev.d + '@local\r\n' +
+        'DTSTART;VALUE=DATE:' + toICSDate(ev.d) + '\r\n' +
+        'DTEND;VALUE=DATE:' + toICSDate(nextDay(ev.d)) + '\r\n' +
+        'SUMMARY:' + (en && ev.en ? ev.en : ev.n) + '\r\n' +
+        'DESCRIPTION:' + (ev.t || '').replace(/\r?\n/g, ' ') + '\r\n' +
+        'END:VEVENT\r\n';
+    });
+    ics += 'END:VCALENDAR\r\n';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+    a.download = 'solar-guide-events.ics';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast(t8('cal.icsOk', '📅 日历文件已导出——可导入手机/电脑日历应用'));
+  }
+  function nextDay(d) {
+    const t = Date.parse(d + 'T12:00:00Z') + 86400000;
+    const dt = new Date(t);
+    return dt.getUTCFullYear() + '-' + String(dt.getUTCMonth() + 1).padStart(2, '0') + '-' + String(dt.getUTCDate()).padStart(2, '0');
   }
 
   function initCalendar() {
@@ -125,7 +179,9 @@
     initCalendar();
     buildTimeline();
     $('btn-timeline').addEventListener('click', function () { toggleTimeline(); });
+    $('btn-ics').addEventListener('click', exportICS);
     window.addEventListener('solar-lang', function () {
+      oppCache = null; // 语言切换后重建描述
       renderList($('cal-search') ? $('cal-search').value.trim() : '');
       if (!$('timeline').classList.contains('hidden')) buildTimeline();
     });
