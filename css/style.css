@@ -582,6 +582,20 @@ button.hot:hover { background: rgba(120, 88, 24, 0.75); border-color: var(--acce
   border-left: 3px solid rgba(255, 200, 94, 0.5);
 }
 
+/* v16.0 关灯模式：UI 降为 12% 不透明度，悬停恢复 */
+body.dimmed #topbar,
+body.dimmed #bottom-dock,
+body.dimmed #date-hud,
+body.dimmed #fact-ticker,
+body.dimmed #timeline,
+body.dimmed #info-panel { opacity: 0.12; transition: opacity 0.5s; }
+body.dimmed #topbar:hover,
+body.dimmed #bottom-dock:hover,
+body.dimmed #date-hud:hover,
+body.dimmed #timeline:hover,
+body.dimmed #info-panel:hover { opacity: 1; transition: opacity 0.2s; }
+body.dimmed #btn-dim { opacity: 1; }
+
 /* v15.0 课程进行中：浮层置顶（可与打开的面板共存讲解） */
 body.tour-active #tour-card { z-index: 30; }
 

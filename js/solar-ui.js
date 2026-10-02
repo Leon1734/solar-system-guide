@@ -745,6 +745,11 @@ $('btn-trail').addEventListener('click', function () {
   setTrailVisible(state.showTrail);
   savePrefs();
 });
+/* v16.0 关灯模式：UI 半透明化，沉浸观星 */
+$('btn-dim').addEventListener('click', function () {
+  const on = document.body.classList.toggle('dimmed');
+  this.classList.toggle('active', on);
+});
 /* v10.0 音效开关（需用户手势激活音频上下文） */
 $('btn-sfx').addEventListener('click', function () {
   const on = window.Sfx.toggle();
@@ -753,7 +758,6 @@ $('btn-sfx').addEventListener('click', function () {
   if (on) window.Sfx.chime();
   savePrefs();
 });
-/* v10.0 快照分享：当前画面 PNG + 水印；v15.0 Web Share API（移动端调系统分享） */
 $('btn-shot').addEventListener('click', function () {
   const A = window.SolarApp;
   if (typeof A.renderOnce !== 'function') return;

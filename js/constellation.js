@@ -119,6 +119,28 @@ window.StarMap = (function () {
       raDecToScene(m.ra, m.dec, v);
       return v;
     });
+    // v16.0 辅星（s2/s3）：小星点 + 与距星的细连线，构成每宿的"星官"小图形
+    const auxPts = [], auxLines = [];
+    CONST_MANSIONS.forEach(function (m, i) {
+      [['s2'], ['s3']].forEach(function (k) {
+        if (!m[k[0]]) return;
+        const v = new THREE.Vector3();
+        raDecToScene(m[k[0]][0], m[k[0]][1], v);
+        auxPts.push(v.x, v.y, v.z);
+        auxLines.push(pts[i].x, pts[i].y, pts[i].z, v.x, v.y, v.z);
+      });
+    });
+    const auxGeo = new THREE.BufferGeometry();
+    auxGeo.setAttribute('position', new THREE.Float32BufferAttribute(auxPts, 3));
+    cnGroup.add(new THREE.Points(auxGeo, new THREE.PointsMaterial({
+      size: 4.5, map: T_DOT, color: 0xf0c890, transparent: true,
+      opacity: 0.8, sizeAttenuation: false, depthWrite: false
+    })));
+    const auxLineGeo = new THREE.BufferGeometry();
+    auxLineGeo.setAttribute('position', new THREE.Float32BufferAttribute(auxLines, 3));
+    cnGroup.add(new THREE.LineSegments(auxLineGeo, new THREE.LineBasicMaterial({
+      color: 0xf0c890, transparent: true, opacity: 0.38, depthWrite: false
+    })));
     // 宿链（闭合）：月亮的 28 站路线
     const linePts = [];
     for (let i = 0; i <= pts.length; i++) {

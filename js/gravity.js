@@ -14,7 +14,9 @@ window.GravityLab = (function () {
   const PLANETS = {
     jupiter: { n: '木星', en: 'Jupiter', K: 1.2, P: 1.00, r: 26, color: '#d8a56c' },
     saturn: { n: '土星', en: 'Saturn', K: 0.70, P: 0.72, r: 22, color: '#e3c893' },
-    earth: { n: '地球', en: 'Earth', K: 0.15, P: 0.30, r: 12, color: '#3f7fd4' }
+    earth: { n: '地球', en: 'Earth', K: 0.15, P: 0.30, r: 12, color: '#3f7fd4' },
+    venus: { n: '金星', en: 'Venus', K: 0.10, P: 0.28, r: 11, color: '#e8c46b' },
+    mercury: { n: '水星', en: 'Mercury', K: 0.04, P: 0.10, r: 8, color: '#b5a48f' }
   };
 
   /* 关卡目标 */
