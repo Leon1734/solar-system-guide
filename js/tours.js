@@ -131,6 +131,14 @@ var TourEngine = (function () {
       autoAdvance = true;
       $('tour-wait').classList.remove('hidden');
     }
+    // v15.0 步骤可打开观测面板（课程浮层置顶，与面板共存）
+    if (s.open) {
+      const closer = document.querySelector('.modal:not(.hidden) .modal-close');
+      if (closer) closer.click();
+      const map = { sky: 'btn-sky', cal: 'btn-cal', moon: 'btn-moon', meteors: 'btn-meteors', transit: 'btn-transit', gravity: 'btn-gravity', starlife: 'btn-starlife' };
+      const btn = document.getElementById(map[s.open]);
+      if (btn) btn.click();
+    }
   }
 
   function next() {
@@ -215,6 +223,7 @@ var TourEngine = (function () {
     if (!tour) return;
     idx = 0; quizMode = false;
     closeAllModals();
+    document.body.classList.add('tour-active'); // v15.0 课程浮层置顶，可与面板共存
     showCard();
     renderStep();
   }
@@ -222,6 +231,7 @@ var TourEngine = (function () {
     stopSpeak();
     clearAuto();
     autoPlay = false;
+    document.body.classList.remove('tour-active');
     tour = null; quizMode = false;
     $('tour-quiz').classList.add('hidden');
     $('tour-quiz').innerHTML = '';

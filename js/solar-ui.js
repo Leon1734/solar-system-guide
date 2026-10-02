@@ -753,7 +753,7 @@ $('btn-sfx').addEventListener('click', function () {
   if (on) window.Sfx.chime();
   savePrefs();
 });
-/* v10.0 快照分享：当前画面 PNG + 水印 */
+/* v10.0 快照分享：当前画面 PNG + 水印；v15.0 Web Share API（移动端调系统分享） */
 $('btn-shot').addEventListener('click', function () {
   const A = window.SolarApp;
   if (typeof A.renderOnce !== 'function') return;
@@ -771,11 +771,27 @@ $('btn-shot').addEventListener('click', function () {
   c2.fillText('🌞 太阳系漫游指南 · ' +
     d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate()) +
     ' · ' + obs2Label(), 12, src.height + 22);
-  const a = document.createElement('a');
-  a.href = cv.toDataURL('image/png');
-  a.download = 'solar-snapshot-' + d.getUTCFullYear() + pad2(d.getUTCMonth() + 1) + pad2(d.getUTCDate()) + '.png';
-  a.click();
-  toast(t8('ui.shotOk', '📸 快照已保存'));
+  const name = 'solar-snapshot-' + d.getUTCFullYear() + pad2(d.getUTCMonth() + 1) + pad2(d.getUTCDate()) + '.png';
+  cv.toBlob(function (blob) {
+    if (!blob) return;
+    let file;
+    try { file = new File([blob], name, { type: 'image/png' }); }
+    catch (e) { file = null; }
+    // 移动端/支持环境：调系统分享面板
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: '太阳系漫游指南' })
+        .then(function () { toast('📤 ' + t8('ui.shared', '快照已通过系统分享发送')); })
+        .catch(function () { /* 用户取消分享 */ });
+      return;
+    }
+    // 桌面/不支持：直接下载
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast(t8('ui.shotOk', '📸 快照已保存'));
+  }, 'image/png');
 });
 function obs2Label() {
   try {

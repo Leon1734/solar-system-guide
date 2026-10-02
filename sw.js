@@ -1,7 +1,7 @@
 /* 太阳系漫游指南 · Service Worker（离线缓存，仅 http(s) 下生效） */
 'use strict';
 
-const CACHE = 'solar-guide-v18';
+const CACHE = 'solar-guide-v19';
 const ASSETS = [
   './',
   './index.html',

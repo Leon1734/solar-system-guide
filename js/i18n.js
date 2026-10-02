@@ -28,6 +28,7 @@ window.I18N = (function () {
       areaLaw: '📐 Kepler II: the shaded wedge is the area swept in the last 30 days — fat near perihelion, slim at aphelion, always equal',
       ringView: '🛰️ Flying over the rings — spot the Cassini & Encke gaps',
       csvOk: '📄 Sky report exported as CSV', years: 'yr',
+      shotOk: '📸 Snapshot saved', shared: '📤 Snapshot shared',
       duckView: '🦆 Two-lobed "rubber duck" nucleus — two cometesimals merged in a slow collision, Rosetta’s famous find',
       constCn: '🏯 Chinese star mansions: the 28-lunar-mansion inn chain — the Moon lodges at one per night',
       ephOk: '📅 Yearly ephemeris exported (12 rows)',
@@ -86,7 +87,7 @@ window.I18N = (function () {
       hzTemp: 'In habitable zone — liquid water possible', outTemp: 'Outside habitable zone',
       atmo: 'To be revealed by JWST'
     },
-    badges: { guide: 'Navigator', kepler: "Kepler's Apprentice", mercury: 'Mercury Explorer', seasons: 'Season Keeper', jupiter: 'Jupiter Watcher', halley: 'Comet Hunter', pluto: 'Frontier Pioneer' },
+    badges: { guide: 'Navigator', kepler: "Kepler's Apprentice", mercury: 'Mercury Explorer', seasons: 'Season Keeper', jupiter: 'Jupiter Watcher', halley: 'Comet Hunter', pluto: 'Frontier Pioneer', stargazing: 'First Light' },
     /* 天体卡（英文覆盖：name/type/desc/factN） */
     cards: {
       sun: { name: 'Sun', type: 'G-type main-sequence star', desc: 'The absolute ruler of the Solar System — a star that has burned for 4.6 billion years and holds 99.86% of its mass.', fact0: 'Every second the Sun fuses ~600 million tons of hydrogen into helium.', fact1: 'Sunlight takes 8 min 20 s to reach Earth — but a photon born in the core may take tens of thousands of years to escape.', fact2: '1.3 million Earths would fit inside the Sun.', fact3: 'The Sun is slowly brightening; in ~1 billion years Earth may become too hot for life.' },
@@ -271,6 +272,21 @@ window.I18N = (function () {
         quiz: [
           { q: 'Pluto was demoted mainly because…', options: ['it is too small', 'it has not cleared its orbital zone', 'it is too far'], answer: 1, explain: 'One of the three planet criteria is clearing the neighbourhood.' },
           { q: 'The Kuiper Belt lies at about…', options: ['2–4 AU', '8–12 AU', '30–50 AU'], answer: 2, explain: 'The icy realm beyond Neptune.' }
+        ]
+      },
+      stargazing: {
+        title: 'Stargazing 101', desc: 'From zero: what to see tonight and how',
+        badge: '🔭 First Light',
+        steps: [
+          { t: 'Tonight’s sky', text: '👁️ I’ve opened “Tonight’s Sky” — the real sky for right now. Azimuth runs clockwise from north; altitude rises from the horizon. Planets, the setting Sun — all at a glance.' },
+          { t: 'Which constellation?', text: 'Check the zodiac strip below the panel: “Mars · Scorpius/Xin” — western and Chinese names side by side. Click it to unfold constellation lines or the Chinese mansions.' },
+          { t: 'What’s coming up', text: '📅 Open the Astro Calendar — the almanac strip lists oppositions, elongations and lunar conjunctions for the next 90 days, each one click from its night.' },
+          { t: 'The Moon right now', text: '🌙 “Moon Telescope” shows tonight’s true phase with lunar feature names. Full moon favours craters; crescent seasons favour deep-sky objects.' },
+          { t: 'Write down your plan', text: '⭐ Every calendar event has a star button — save it to your Observing Plan, then export the list. Next clear night, march out on schedule.' }
+        ],
+        quiz: [
+          { q: 'At opposition a planet is…', options: ['up all night, closest & biggest', 'only visible at dawn', 'hiding behind the Sun'], answer: 0, explain: 'Opposition = Earth between planet and Sun — rises at dusk, sets at dawn.' },
+          { q: '“Greatest elongation” is the best time to observe…', options: ['Mercury & Venus', "Saturn's rings", 'Mars'], answer: 0, explain: 'Inner planets never stray far from the Sun — greatest elongation is when they’re farthest from its glare.' }
         ]
       }
     },

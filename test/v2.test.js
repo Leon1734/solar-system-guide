@@ -77,7 +77,7 @@ check('阋神星周期 [年]', eris.periodDays / 365.25, 559, 3);
 
 /* 课程数据完整性：7 课，每课有徽章/测验，测验答案索引合法 */
 console.log('\n漫游课程数据检查：');
-check('课程数量', TOURS.length, 7, 0);
+check('课程数量', TOURS.length, 8, 0);
 TOURS.forEach(t => {
   const ok = t.badge && t.quiz.length >= 2 &&
     t.quiz.every(q => q.answer >= 0 && q.answer < q.options.length) &&

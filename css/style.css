@@ -582,6 +582,9 @@ button.hot:hover { background: rgba(120, 88, 24, 0.75); border-color: var(--acce
   border-left: 3px solid rgba(255, 200, 94, 0.5);
 }
 
+/* v15.0 课程进行中：浮层置顶（可与打开的面板共存讲解） */
+body.tour-active #tour-card { z-index: 30; }
+
 /* 投影模式：隐藏全部 UI，仅留退出按钮，标签放大 */
 body.projecting #topbar,
 body.projecting #bottom-dock,
