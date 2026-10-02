@@ -20,19 +20,4 @@ jobs:
       - name: 数据与物理验证 / Data & physics
         run: node test/v2.test.js
       - name: 引导完整性静态检查 / Boot integrity
-        run: |
-          node -e "
-          const fs = require('fs');
-          const html = fs.readFileSync('index.html', 'utf8');
-          const dynamic = new Set(['quiz-finish','tour-wait-bar','row-progress','row-live','row-dist']);
-          const missing = [];
-          fs.readdirSync('js').filter(f => f.endsWith('.js') && !['boot.js','data.js','textures.js'].includes(f)).forEach(f => {
-            const src = fs.readFileSync('js/' + f, 'utf8');
-            const re = /\\$\('([\w-]+)'\)/g; let m;
-            while ((m = re.exec(src))) {
-              if (!dynamic.has(m[1]) && html.indexOf('id=\"' + m[1] + '\"') < 0) missing.push(f + ' -> ' + m[1]);
-            }
-          });
-          if (missing.length) { console.error('missing ids:', missing); process.exit(1); }
-          console.log('id cross-check clean');
-          "
+        run: node test/boot-check.js
