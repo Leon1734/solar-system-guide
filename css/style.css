@@ -567,6 +567,21 @@ button.hot:hover { background: rgba(120, 88, 24, 0.75); border-color: var(--acce
 .alm-name { font-size: 12.5px; color: #e8eefb; flex: 1; }
 .alm-days { font-size: 11.5px; color: #9fe8a8; white-space: nowrap; }
 
+/* v14.0 观测计划本 */
+.cal-item.faved { border-color: rgba(255, 200, 94, 0.45); }
+.ci-star {
+  font-size: 16px; color: #7d8db0; cursor: pointer;
+  padding: 0 4px; flex-shrink: 0;
+}
+.ci-star:hover { color: #ffd97a; }
+.fav-title { font-size: 12.5px; color: #ffd97a; margin-bottom: 6px; }
+.fav-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; text-align: left; padding: 5px 12px; margin-bottom: 3px;
+  background: rgba(90, 66, 20, 0.18);
+  border-left: 3px solid rgba(255, 200, 94, 0.5);
+}
+
 /* 投影模式：隐藏全部 UI，仅留退出按钮，标签放大 */
 body.projecting #topbar,
 body.projecting #bottom-dock,

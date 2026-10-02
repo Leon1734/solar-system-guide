@@ -153,6 +153,71 @@ window.StarMap = (function () {
     });
     cnGroup.visible = state.constMode === 'china';
     scene.add(cnGroup);
+    buildSanYuan();
+  }
+
+  /* v14.0 三垣骨架：紫微/太微/天市（仅中国模式显示） */
+  let syGroup = null, syLabels = [];
+  function buildSanYuan() {
+    if (syGroup) return;
+    syGroup = new THREE.Group();
+    SAN_YUAN.forEach(function (yuan) {
+      const pts = yuan.stars.map(function (s) {
+        const v = new THREE.Vector3();
+        raDecToScene(s.ra, s.dec, v);
+        return v;
+      });
+      // 骨架连线
+      const linePts = [];
+      pts.forEach(function (v) { linePts.push(v.x, v.y, v.z); });
+      const lg = new THREE.BufferGeometry();
+      lg.setAttribute('position', new THREE.Float32BufferAttribute(linePts, 3));
+      cnGroup.add(syGroup.add(new THREE.Line(lg, new THREE.LineBasicMaterial({
+        color: yuan.color, transparent: true, opacity: 0.55, depthWrite: false
+      }))));
+      // 星点与标签
+      pts.forEach(function (v, i) {
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: T_DOT, color: yuan.color, transparent: true, opacity: 0.95, depthWrite: false
+        }));
+        sp.position.copy(v);
+        sp.scale.set(6, 6, 1);
+        syGroup.add(sp);
+        const el = document.createElement('div');
+        el.className = 'body-label star-label sy-label';
+        el.textContent = (I18N && I18N.lang === 'en') ? yuan.stars[i].n + ' · ' + yuan.e.split(' ')[0] : yuan.stars[i].n;
+        el.style.display = 'none';
+        el.addEventListener('click', function (e) {
+          e.stopPropagation();
+          showSanYuan(yuan);
+        });
+        labelsRoot.appendChild(el);
+        syLabels.push({ pos: v.clone(), el: el });
+      });
+      // 垣名标签（取首星上方）
+      const nameEl = document.createElement('div');
+      nameEl.className = 'body-label star-label sy-label';
+      nameEl.textContent = (I18N && I18N.lang === 'en') ? '🏯 ' + yuan.e : '🏯 ' + yuan.n;
+      nameEl.style.display = 'none';
+      nameEl.addEventListener('click', function (e) {
+        e.stopPropagation();
+        showSanYuan(yuan);
+      });
+      labelsRoot.appendChild(nameEl);
+      syLabels.push({ pos: pts[0].clone(), el: nameEl, nameTag: true });
+    });
+    syGroup.visible = state.constMode === 'china';
+    scene.add(syGroup);
+  }
+  function showSanYuan(yuan) {
+    const en = window.I18N && I18N.lang === 'en';
+    document.getElementById('const-h').textContent = '🏯 ' + (en ? yuan.e : yuan.n);
+    document.getElementById('con-story').textContent = en
+      ? 'One of the Three Enclosures of ancient Chinese sky charts — the framework beyond the 28 mansions.'
+      : yuan.note;
+    document.getElementById('con-star').textContent = '⭐ ' + t8b('垣内诸星：') +
+      yuan.stars.map(function (s) { return s.n; }).join('、');
+    document.getElementById('modal-constellation').classList.remove('hidden');
   }
 
   /* v9.0 宿卡（复用神话模态框） */
@@ -182,6 +247,17 @@ window.StarMap = (function () {
       if (!vis) return;
       L.el.style.left = ((p.x * 0.5 + 0.5) * window.innerWidth) + 'px';
       L.el.style.top = ((-p.y * 0.5 + 0.5) * window.innerHeight) + 'px';
+    });
+    // v14.0 三垣标签（随中国模式）
+    syLabels.forEach(function (L) {
+      const d = camTmp.distanceTo(L.pos);
+      if (!cnOn || d >= 95000) { L.el.style.display = 'none'; return; }
+      const p = L.pos.clone().project(camera);
+      const vis = p.z < 1 && Math.abs(p.x) < 1.05 && Math.abs(p.y) < 1.05;
+      L.el.style.display = vis ? '' : 'none';
+      if (!vis) return;
+      L.el.style.left = ((p.x * 0.5 + 0.5) * window.innerWidth) + 'px';
+      L.el.style.top = ((-p.y * 0.5 + 0.5) * window.innerHeight) - (L.nameTag ? 14 : 0) + 'px';
     });
     labels.forEach(function (L) {
       const d = camTmp.distanceTo(L.pos);
@@ -238,6 +314,7 @@ window.StarMap = (function () {
       if (!group) build();
       group.visible = mode === 'west';
       if (cnGroup) cnGroup.visible = mode === 'china';
+      if (syGroup) syGroup.visible = mode === 'china';
       lastMode = mode;
       if (mode === 'west') {
         lineMat.opacity = 0.32;
@@ -262,7 +339,10 @@ window.StarMap = (function () {
     labels = [];
     cnLabels.forEach(function (L) { L.el.remove(); });
     cnLabels = [];
+    syLabels.forEach(function (L) { L.el.remove(); });
+    syLabels = [];
     if (cnGroup) { scene.remove(cnGroup); cnGroup = null; }
+    if (syGroup) { scene.remove(syGroup); syGroup = null; }
     scene.remove(group);
     built = false;
     build();

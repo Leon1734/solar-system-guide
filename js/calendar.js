@@ -62,13 +62,16 @@
         t: t8('cal.conjP', '两颗行星在天空近到同框——肉眼就是一个"双星"，双筒望远镜能看到行星圆面同现。')
       });
     });
-    // v13 行星合月（未来 90 天，<4°）
+    // v13 行星合月（未来 90 天，<4°）——v14: 分离 <1° 标记"极近"
     findMoonConjunctions(now, now + 90).forEach(function (c) {
+      const near = c.sepDeg < 1.0;
       out.push({
         d: dateStrOf(c.days), computed: true, key: c.p.key, days: c.days, icon: '🌙', conj: true,
-        n: c.p.name + '合月 · ' + c.sepDeg.toFixed(1) + '°',
-        en: 'Moon near ' + c.p.en + ' · ' + c.sepDeg.toFixed(1) + '°',
-        t: t8('cal.conjM', '夜空最亮的两盏灯同框——月球与行星相距不足 4°，肉眼即可欣赏"星月相伴"。')
+        n: c.p.name + '合月 · ' + c.sepDeg.toFixed(1) + '°' + (near ? '（极近）' : ''),
+        en: 'Moon near ' + c.p.en + ' · ' + c.sepDeg.toFixed(1) + '°' + (near ? ' (very close)' : ''),
+        t: near
+          ? t8('cal.conjNear', '月球几乎擦过行星——"贴月"级相合，小型望远镜中行星与月缘同框，全年仅数次。')
+          : t8('cal.conjM', '夜空最亮的两盏灯同框——月球与行星相距不足 4°，肉眼即可欣赏"星月相伴"。')
       });
     });
     oppCache = out.sort(function (a, b) { return a.days - b.days; });
@@ -120,18 +123,88 @@
   function renderList(filter) {
     const box = $('cal-list');
     const en = window.I18N && I18N.lang === 'en';
+    const favs = watchlist();
     const items = allEvents()
       .filter(function (ev) { return !filter || ev.d.indexOf(filter) === 0; })
       .map(function (ev) {
         const badge = ev.icon ? ev.icon + ' ' : (ev.cn ? '📜 ' : '');
-        return '<button class="cal-item' + (ev.computed ? ' computed' : '') + '" data-d="' + ev.d + '">' +
+        const fav = favs.indexOf(ev.d) >= 0;
+        return '<button class="cal-item' + (ev.computed ? ' computed' : '') + (fav ? ' faved' : '') + '" data-d="' + ev.d + '">' +
           '<span class="ci-date">' + badge + ev.d + '</span>' +
-          '<span class="ci-body"><span class="ci-name">' + (en && ev.en ? ev.en : ev.n) + '</span>' +
-          '<span class="ci-desc">' + ev.t + '</span></span></button>';
+          '<span class="ci-body"><span class="ci-name">' + (fav ? '★ ' : '') + (en && ev.en ? ev.en : ev.n) + '</span>' +
+          '<span class="ci-desc">' + ev.t + '</span></span>' +
+          '<span class="ci-star" data-d="' + ev.d + '" title="' + (fav ? t8('cal.unfav', '移出计划本') : t8('cal.fav', '加入计划本')) + '">' + (fav ? '★' : '☆') + '</span>' +
+          '</button>';
       }).join('');
     box.innerHTML = items || '<p class="ci-none">' + t8('cal.none', '该年份无收录天象，试试其他年份') + '</p>';
     box.querySelectorAll('.cal-item').forEach(function (b) {
+      b.addEventListener('click', function (e) {
+        if (e.target.classList.contains('ci-star')) return; // 收藏按钮单独处理
+        jumpTo(this.dataset.d);
+      });
+    });
+    box.querySelectorAll('.ci-star').forEach(function (s) {
+      s.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggleFav(this.dataset.d);
+      });
+    });
+    renderFav();
+  }
+
+  /* ---------- v14.0 观测计划本 ---------- */
+  const FAV_KEY = 'solar_watchlist_v1';
+  function watchlist() {
+    try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function saveFavs(list) {
+    try { localStorage.setItem(FAV_KEY, JSON.stringify(list)); } catch (e) { }
+  }
+  function toggleFav(dateStr) {
+    const list = watchlist();
+    const i = list.indexOf(dateStr);
+    if (i >= 0) list.splice(i, 1); else list.push(dateStr);
+    saveFavs(list);
+    if (window.Sfx) window.Sfx.click();
+    renderList($('cal-search').value.trim());
+    renderFav();
+  }
+  function renderFav() {
+    const box = $('cal-fav');
+    if (!box) return;
+    const favs = watchlist();
+    const btn = $('btn-fav');
+    if (btn) btn.textContent = '📋 ' + t8('cal.favBtn', '计划本') + (favs.length ? '(' + favs.length + ')' : '');
+    if (!favs.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    const en = window.I18N && I18N.lang === 'en';
+    const all = allEvents();
+    box.classList.remove('hidden');
+    box.innerHTML = '<div class="fav-title">📋 ' + t8('cal.myPlan', '我的观测计划本') + '</div>' +
+      '<div class="fav-list">' + favs.sort().map(function (d) {
+        const ev = all.find(function (x) { return x.d === d; });
+        return '<button class="fav-item" data-d="' + d + '">' +
+          '<span class="alm-when">' + d.slice(5) + '</span>' +
+          '<span class="alm-name">' + (ev ? (ev.icon || '') + ' ' + (en && ev.en ? ev.en : ev.n) : d) + '</span>' +
+          '<span class="alm-days">★</span></button>';
+      }).join('') + '</div>' +
+      '<button id="btn-fav-export" style="width:100%; margin-top:6px;">📄 ' + t8('cal.favExport', '导出计划本 (TXT)') + '</button>';
+    box.querySelectorAll('.fav-item').forEach(function (b) {
       b.addEventListener('click', function () { jumpTo(this.dataset.d); });
+    });
+    $('btn-fav-export').addEventListener('click', function () {
+      const lines = favs.sort().map(function (d) {
+        const ev = all.find(function (x) { return x.d === d; });
+        return d + '  ' + (ev ? (en && ev.en ? ev.en : ev.n) : '') + (ev ? ' — ' + ev.t : '');
+      });
+      const txt = '🌞 太阳系漫游指南 · 观测计划本\n' +
+        '━━━━━━━━━━━━━━━━━━\n' + lines.join('\n') + '\n\n' +
+        '由太阳系漫游指南生成 · https://leon1734.github.io/solar-system-guide/';
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain;charset=utf-8' }));
+      a.download = 'my-observing-plan.txt';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast(t8('ui.favOk', '📋 观测计划本已导出'));
     });
   }
 
@@ -264,11 +337,15 @@
     buildTimeline();
     $('btn-timeline').addEventListener('click', function () { toggleTimeline(); });
     $('btn-ics').addEventListener('click', exportICS);
+    $('btn-fav').addEventListener('click', function () {
+      $('cal-fav').classList.toggle('hidden');
+    });
     renderAlmanac();
     window.addEventListener('solar-lang', function () {
       oppCache = null; // 语言切换后重建描述
       renderList($('cal-search') ? $('cal-search').value.trim() : '');
       renderAlmanac();
+      renderFav();
       if (!$('timeline').classList.contains('hidden')) buildTimeline();
     });
   }

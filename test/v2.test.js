@@ -6,9 +6,9 @@ const vm = require('vm');
 const ctx = {};
 vm.createContext(ctx);
 const src = fs.readFileSync(__dirname + '/../js/data.js', 'utf8') +
-  "\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS, findOppositions: findOppositions, findElongations: findElongations, findMoonPhases: findMoonPhases, findPlanetConjunctions: findPlanetConjunctions, findMoonConjunctions: findMoonConjunctions };";
+  "\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS, findOppositions: findOppositions, findElongations: findElongations, findMoonPhases: findMoonPhases, findPlanetConjunctions: findPlanetConjunctions, findMoonConjunctions: findMoonConjunctions, SAN_YUAN: SAN_YUAN };";
 vm.runInContext(src, ctx);
-const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS, findOppositions, findElongations, findMoonPhases, findPlanetConjunctions, findMoonConjunctions } = ctx.__x;
+const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS, findOppositions, findElongations, findMoonPhases, findPlanetConjunctions, findMoonConjunctions, SAN_YUAN } = ctx.__x;
 
 const D2R = Math.PI / 180;
 const TAU = Math.PI * 2;
@@ -532,6 +532,26 @@ console.log('\nv13 同框天象（合）检查：');
   const ok = mc.length >= 6 && mc.length <= 16 && mc.every(c => c.sepDeg < 4);
   console.log((ok ? '✅' : '❌') + ' 未来 90 天合月 ' + mc.length + ' 次，全部 <4°');
   ok ? pass++ : fail++;
+}
+
+console.log('\nv14 三垣/极近相合检查：');
+{
+  // 三垣：3 垣、每垣 3-4 星、坐标合法、note 完整
+  const syOk = SAN_YUAN.length === 3 &&
+    SAN_YUAN.every(y => y.stars.length >= 3 && y.stars.length <= 4 &&
+      y.stars.every(s => s.ra >= 0 && s.ra < 24 && Math.abs(s.dec) <= 90 && s.n) && y.note);
+  console.log((syOk ? '✅' : '❌') + ' 三垣骨架：紫微/太微/天市，' + SAN_YUAN.reduce((n, y) => n + y.stars.length, 0) + ' 星');
+  syOk ? pass++ : fail++;
+  // 紫微垣应围绕北极（勾陈一 dec>89）
+  const zi = SAN_YUAN.find(y => y.n === '紫微垣');
+  const polarOk = zi && zi.stars.some(s => s.dec > 89);
+  console.log((polarOk ? '✅' : '❌') + ' 紫微垣含北极星（恒显圈中枢）');
+  polarOk ? pass++ : fail++;
+  // 极近合月：未来 2 年内月-行星分离 <1° 应有数次
+  const n0 = (Date.UTC(2026, 9, 1) - J2000T) / 86400000;
+  const near = findMoonConjunctions(n0, n0 + 730).filter(c => c.sepDeg < 1.0);
+  console.log((near.length >= 1 ? '✅' : '❌') + ' 未来 2 年极近合月（<1°）' + near.length + ' 次');
+  near.length >= 1 ? pass++ : fail++;
 }
 
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');

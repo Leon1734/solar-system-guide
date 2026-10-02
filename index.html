@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>太阳系漫游指南 · 交互式三维科普演示</title>
   <meta name="description" content="基于 NASA/JPL 轨道数据的交互式太阳系三维模拟：真实行星位置、开普勒定律演示、漫游课程、系外行星系统">
-  <link rel="stylesheet" href="css/style.css?v=17">
+  <link rel="stylesheet" href="css/style.css?v=18">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🌞</text></svg>">
   <link rel="manifest" href="manifest.webmanifest">
 </head>
@@ -205,7 +205,9 @@
       <p class="modal-sub" id="cal-sub">2020–2061 关键天象——点击任意一条，模拟器跳转到那天的真实星空并自动运镜</p>
       <div id="cal-almanac"></div>
       <input type="text" id="cal-search" placeholder="按年份筛选，如 2029" style="width:100%; margin-bottom:10px;">
-      <button id="btn-ics" style="width:100%; margin-bottom:10px;" title="导出为 .ics 日历文件，可导入手机/电脑">📆 导出全部天象到我的日历 (.ics)</button>
+      <button id="btn-ics" style="width:100%; margin-bottom:6px;" title="导出为 .ics 日历文件，可导入手机/电脑">📆 导出全部天象到我的日历 (.ics)</button>
+      <button id="btn-fav" style="width:100%; margin-bottom:6px;">📋 计划本</button>
+      <div id="cal-fav" class="hidden" style="margin-bottom:10px;"></div>
       <div id="cal-list" style="max-height:46vh; overflow-y:auto;"></div>
       <div id="cal-detail" class="hidden"></div>
     </div>
@@ -413,35 +415,35 @@
   <div id="error-banner" class="hidden"></div>
 
   <!-- 库与程序（defer：先让加载屏绘制，再执行重量级初始化；defer 保持执行顺序） -->
-  <script defer src="js/lib/three.min.js?v=17"></script>
-  <script defer src="js/lib/OrbitControls.js?v=17"></script>
-  <script defer src="js/lib/postprocessing/CopyShader.js?v=17"></script>
-  <script defer src="js/lib/postprocessing/LuminosityHighPassShader.js?v=17"></script>
-  <script defer src="js/lib/postprocessing/EffectComposer.js?v=17"></script>
-  <script defer src="js/lib/postprocessing/MaskPass.js?v=17"></script>
-  <script defer src="js/lib/postprocessing/ShaderPass.js?v=17"></script>
-  <script defer src="js/lib/postprocessing/RenderPass.js?v=17"></script>
-  <script defer src="js/lib/postprocessing/UnrealBloomPass.js?v=17"></script>
-  <script defer src="js/data.js?v=17"></script>
-  <script defer src="js/i18n.js?v=17"></script>
-  <script defer src="js/textures.js?v=17"></script>
-  <script defer src="js/solar-core.js?v=17"></script>
-  <script defer src="js/solar-bodies.js?v=17"></script>
-  <script defer src="js/solar-ui.js?v=17"></script>
-  <script defer src="js/solar-main.js?v=17"></script>
-  <script defer src="js/tours.js?v=17"></script>
-  <script defer src="js/tools.js?v=17"></script>
-  <script defer src="js/starlife.js?v=17"></script>
-  <script defer src="js/transit.js?v=17"></script>
-  <script defer src="js/gravity.js?v=17"></script>
-  <script defer src="js/meteors.js?v=17"></script>
-  <script defer src="js/sky.js?v=17"></script>
-  <script defer src="js/gamepad.js?v=17"></script>
-  <script defer src="js/constellation.js?v=17"></script>
-  <script defer src="js/moonphase.js?v=17"></script>
-  <script defer src="js/calendar.js?v=17"></script>
-  <script defer src="js/quizdaily.js?v=17"></script>
-  <script defer src="js/sfx.js?v=17"></script>
-  <script defer src="js/boot.js?v=17"></script>
+  <script defer src="js/lib/three.min.js?v=18"></script>
+  <script defer src="js/lib/OrbitControls.js?v=18"></script>
+  <script defer src="js/lib/postprocessing/CopyShader.js?v=18"></script>
+  <script defer src="js/lib/postprocessing/LuminosityHighPassShader.js?v=18"></script>
+  <script defer src="js/lib/postprocessing/EffectComposer.js?v=18"></script>
+  <script defer src="js/lib/postprocessing/MaskPass.js?v=18"></script>
+  <script defer src="js/lib/postprocessing/ShaderPass.js?v=18"></script>
+  <script defer src="js/lib/postprocessing/RenderPass.js?v=18"></script>
+  <script defer src="js/lib/postprocessing/UnrealBloomPass.js?v=18"></script>
+  <script defer src="js/data.js?v=18"></script>
+  <script defer src="js/i18n.js?v=18"></script>
+  <script defer src="js/textures.js?v=18"></script>
+  <script defer src="js/solar-core.js?v=18"></script>
+  <script defer src="js/solar-bodies.js?v=18"></script>
+  <script defer src="js/solar-ui.js?v=18"></script>
+  <script defer src="js/solar-main.js?v=18"></script>
+  <script defer src="js/tours.js?v=18"></script>
+  <script defer src="js/tools.js?v=18"></script>
+  <script defer src="js/starlife.js?v=18"></script>
+  <script defer src="js/transit.js?v=18"></script>
+  <script defer src="js/gravity.js?v=18"></script>
+  <script defer src="js/meteors.js?v=18"></script>
+  <script defer src="js/sky.js?v=18"></script>
+  <script defer src="js/gamepad.js?v=18"></script>
+  <script defer src="js/constellation.js?v=18"></script>
+  <script defer src="js/moonphase.js?v=18"></script>
+  <script defer src="js/calendar.js?v=18"></script>
+  <script defer src="js/quizdaily.js?v=18"></script>
+  <script defer src="js/sfx.js?v=18"></script>
+  <script defer src="js/boot.js?v=18"></script>
 </body>
 </html>

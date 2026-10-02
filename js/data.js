@@ -730,7 +730,7 @@ HELP_ITEMS.push(
  * ============================================================ */
 
 /* 数据版本号：solar-bodies.js 启动时校验，防止浏览器缓存的旧数据与新代码混搭 */
-if (typeof window !== "undefined") window.DATA_VERSION = 17;
+if (typeof window !== "undefined") window.DATA_VERSION = 18;
 
 /* 亮星座（s: 恒星 [赤经小时, 赤纬度]；l: 连线索引；b: 亮星中文名） */
 const CONSTELLATIONS = [
@@ -1257,3 +1257,31 @@ function findMoonConjunctions(fromDays, toDays, maxSep) {
   out.sort(function (x, y) { return x.days - y.days; });
   return out;
 }
+
+/* ============================================================
+ * v14.0 三垣骨架（紫微/太微/天市，简化星表——科普级示意）
+ * ============================================================ */
+const SAN_YUAN = [
+  { n: '紫微垣', e: 'Purple Forbidden Enclosure', color: 0xc8b8ff,
+    note: '天帝的宫殿，环北极而居——这里的星终年不落（恒显圈），是二十八宿之外的"天空中枢"。',
+    stars: [
+      { n: '勾陈一（北极星）', ra: 2.53, dec: 89.26 },
+      { n: '帝星', ra: 14.85, dec: 74.16 },
+      { n: '太子', ra: 15.35, dec: 71.83 }
+    ] },
+  { n: '太微垣', e: 'Supreme Palace Enclosure', color: 0xffd9a0,
+    note: '天政府——大臣议政的朝堂，五帝座居中，左右垣墙如文武百官分列。',
+    stars: [
+      { n: '五帝座一', ra: 11.82, dec: 14.57 },
+      { n: '东上相', ra: 11.98, dec: -1.45 },
+      { n: '东次相', ra: 12.93, dec: 3.40 },
+      { n: '西次相', ra: 11.79, dec: -0.40 }
+    ] },
+  { n: '天市垣', e: 'Heavenly Market Enclosure', color: 0xa8e8c8,
+    note: '天上的市集——三垣中最"接地气"的烟火之地，诸侯商贾以星为肆。',
+    stars: [
+      { n: '侯', ra: 17.58, dec: 12.56 },
+      { n: '河中', ra: 16.50, dec: 21.49 },
+      { n: '宋', ra: 15.58, dec: 10.54 }
+    ] }
+];
