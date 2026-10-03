@@ -62,20 +62,20 @@
         t: t8('cal.conjP', '两颗行星在天空近到同框——肉眼就是一个"双星"，双筒望远镜能看到行星圆面同现。')
       });
     });
-    // v13 行星合月（未来 90 天，<4°）——v14: 分离 <1° 标记"极近"
-    // v17 月掩/极近行星 + 月掩昴星团（高精度 0.25 天步进，<1.6°）
-    findMoonCloseApproaches(now - 100, now + 400).forEach(function (c) {
-      const occult = c.sepDeg < 0.9;
-      const isPlei = c.p.key === 'pleiades';
+    // v19 月掩星精确事件（<0.95° 视地区可见掩食；0.95~1.2° 为极近）
+    findLunarOccultations(now - 100, now + 400).forEach(function (o) {
       out.push({
-        d: dateStrOf(c.days), computed: true, key: c.p.key, days: c.days, icon: occult ? '🌠' : '🌙', conj: true,
-        n: (occult ? '月掩' : '极近') + (isPlei ? '昴星团' : c.p.name) + ' · ' + c.sepDeg.toFixed(1) + '°',
-        en: (occult ? 'Moon occults ' : 'Moon near ') + c.p.en + ' · ' + c.sepDeg.toFixed(1) + '°',
-        t: occult
-          ? t8('cal.occult', '月掩级事件——行星或昴星团将贴着月缘掠过（是否掩食取决于观测地，月球视差可达 1°）。小望远镜可见"掩始/复现"。')
-          : t8('cal.conjM', '夜空最亮的两盏灯同框——肉眼即可欣赏"星月相伴"。')
+        d: dateStrOf(o.days), computed: true, key: o.p, days: o.days,
+        icon: o.occult ? '🌠' : '✨', conj: true,
+        n: (o.occult ? '月掩' : '月伴') + o.name + ' · ' + o.sepDeg.toFixed(2) + '°',
+        en: (o.occult ? 'Lunar occultation of ' : 'Moon near ') + o.name + ' · ' + o.sepDeg.toFixed(2) + '°',
+        t: o.occult
+          ? t8('cal.occultNow', '月掩级事件——部分观测地可见行星被月缘掩入/复现（月球视差因观测地而异）。小望远镜可见"掩始/复现"。')
+          : t8('cal.conjNear2', '极近相合——行星贴着月缘掠过，肉眼可见"星月相依"。')
       });
     });
+    // v17 月掩/极近行星 + 月掩昴星团——v19 findLunarOccultations 已覆盖此类事件，跳过避免重复
+    // （原 findMoonCloseApproaches 循环整体移除）
     oppCache = out.sort(function (a, b) { return a.days - b.days; });
     return oppCache;
   }

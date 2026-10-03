@@ -166,7 +166,7 @@ window.StarMap = (function () {
       cnGroup.add(sp);
       const el = document.createElement('div');
       el.className = 'body-label star-label cn-label';
-      el.textContent = (I18N && I18N.lang === 'en') ? (m.n + ' · ' + m.img.split('').pop()) : m.n + '宿';
+      el.textContent = (I18N && I18N.lang === 'en') ? m.e : m.n + '宿';
       el.style.display = 'none';
       el.addEventListener('click', function (e) {
         e.stopPropagation();

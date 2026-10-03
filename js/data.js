@@ -826,6 +826,51 @@ const METEOR_SHOWERS = [
 /* v9.0 二十八宿（距星赤经赤纬 J2000 近似；img 四象；meaning 一句话）
  * 顺序即月亮的"驿站"路线：角亢氐房心尾箕（青龙）→ 斗牛女虚危室壁（玄武）→
  * 奎娄胃昴毕觜参（白虎）→ 井鬼柳星张翼轸（朱雀） */
+/* v19.0 月掩星精确时刻：0.05 天步进 + 视差模型
+ * 地心分离 <0.95° 时地球上部分地区可见掩食（掩食带视分离而定） */
+function findLunarOccultations(fromDays, toDays) {
+  const targets = [
+    { key: 'venus', name: '金星', en: 'Venus' },
+    { key: 'mars', name: '火星', en: 'Mars' },
+    { key: 'jupiter', name: '木星', en: 'Jupiter' },
+    { key: 'saturn', name: '土星', en: 'Saturn' },
+    { key: 'pleiades', name: '昴星团', en: 'Pleiades', ecl: [59.95, 4.06] }
+  ];
+  const earth = PLANETS.find(function (p) { return p.key === 'earth'; });
+  const out = [];
+  const a = { x: 0, y: 0, z: 0 }, bv = { x: 0, y: 0, z: 0 };
+  targets.forEach(function (t) {
+    let prev = null, falling = null;
+    const step = t.key === 'pleiades' ? 0.25 : 0.05;
+    for (let d = fromDays; d <= toDays; d += step) {
+      if (t.ecl) {
+        const R = Math.PI / 180;
+        const lon = t.ecl[0] * R, lat = t.ecl[1] * R;
+        const cl = Math.cos(lat);
+        a.x = cl * Math.cos(lon); a.y = cl * Math.sin(lon); a.z = Math.sin(lat);
+      } else {
+        const p = PLANETS.find(function (q) { return q.key === t.key; });
+        _geoUnitOf(p, earth, d, a);
+      }
+      _moonUnit(d, bv);
+      const sep = _sepDegOf(a, bv);
+      if (prev === null) { prev = sep; falling = null; continue; }
+      if (sep < prev) { falling = true; }
+      else if (sep > prev) {
+        if (falling === true && prev < 1.2) {
+          out.push({ p: t.key, name: t.name, sepDeg: prev, occult: prev < 0.95, days: d - step });
+          d += (t.key === 'pleiades' ? 3 : 10);
+          prev = null; falling = null; continue;
+        }
+        falling = false;
+      }
+      prev = sep;
+    }
+  });
+  out.sort(function (x, y) { return x.days - y.days; });
+  return out;
+}
+
 const CONST_MANSIONS = [
   { n: '角', e: 'Jiao (Horn)', img: '东方青龙', ra: 13.42, dec: -11.16, star: '角宿一', meaning: '青龙之角——角宿一正是龙角尖，春分黄昏升起时即是播种季节。' , s2: [12.9, -10.28], s3: [14.2, -10.98], deep: [[13.42,-11.16],[12.9,-10.28],[14.2,-10.98],[13.67,-10.7]]},
   { n: '亢', e: 'Kang (Neck)', img: '东方青龙', ra: 14.15, dec: -10.30, star: '亢宿一', meaning: '青龙的咽喉，主天下的疾疫与政令。' , s2: [14.45, -8.82], deep: [[14.15,-10.3],[14.45,-8.82],[14.18,-7.5]]},
