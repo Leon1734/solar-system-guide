@@ -4,7 +4,7 @@
 'use strict';
 if (window.SolarOK === false) { window.__abortQuiet = true; throw new Error('solar boot aborted'); }
 /* 数据版本守卫：浏览器缓存了旧 data.js 时给出明确指引，而非神秘未定义错误 */
-if ((window.DATA_VERSION || 0) < 20) {
+if ((window.DATA_VERSION || 0) < 21) {
   window.__firstErrShown = false;
   showBanner('⚠️ 检测到旧版缓存数据，请按 Ctrl+F5 强制刷新页面（或清除浏览器缓存）后重试');
   window.__firstErrShown = true;

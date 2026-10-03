@@ -252,21 +252,29 @@ window.GravityLab = (function () {
     });
   }
 
-  /* v13.0 自由接力：任意行星/方向，每次发射按 v出/v入 累积倍率 */
-  const free = { active: false, mult: 1.0, reached: false };
+  /* v13.0 自由接力：任意行星/方向，每次发射按 v出/v入 累积倍率；v17 里程碑+路线 */
+  const free = { active: false, mult: 1.0, reached: false, route: [], milestones: {} };
+  const FREE_MILESTONES = [
+    { at: 1.5, zh: '×1.5 — 火星转移轨道级别！', en: '×1.5 — Mars-transfer class!' },
+    { at: 2.0, zh: '×2.0 — 已达第三宇宙速度（逃逸）！', en: '×2.0 — solar escape achieved!' }
+  ];
   function checkFree() {
     const sres = sim(b, side, planetKey);
     const m = sres.vout / sres.vin;
     free.mult *= m;
+    free.route.push(PLANETS[planetKey].n);
     const enough = free.mult >= 2.0;
     $('g-result').textContent = (m >= 1 ? '✅ ' : '⚠️ ') +
       t8('gr.freeGain', '本次 ') + '×' + m.toFixed(2) + ' → ' + t8('gr.chainSpeed', '累计 ×') + free.mult.toFixed(2) +
       (enough ? (window.I18N && I18N.lang === 'en' ? ' — escape speed achieved!' : ' —— 已达第三宇宙速度（逃逸）！') : '');
     $('g-result').style.color = m >= 1 ? '#9fe8a8' : '#e0a0a0';
-    if (enough && !free.reached) {
-      free.reached = true;
-      if (window.Sfx) window.Sfx.success();
-    } else if (m >= 1 && window.Sfx) window.Sfx.chime();
+    FREE_MILESTONES.forEach(function (ms) {
+      if (free.mult >= ms.at && !free.milestones[ms.at]) {
+        free.milestones[ms.at] = true;
+        if (window.Sfx) window.Sfx.success();
+        toast(window.I18N && I18N.lang === 'en' ? ms.en : ms.zh);
+      }
+    });
     checkChainUI();
   }
 
@@ -313,7 +321,8 @@ window.GravityLab = (function () {
     if (!el) return;
     if (free.active) {
       el.textContent = '🎯 ' + t8('gr.freeStatus', '自由接力 · 累计 ×') + free.mult.toFixed(2) +
-        (free.mult >= 2.0 ? ' ✅' : ' → ' + t8('gr.freeGoal', '目标 ×2.0'));
+        (free.mult >= 2.0 ? ' ✅' : ' → ' + t8('gr.freeGoal', '目标 ×2.0')) +
+        (free.route.length ? ' · ' + free.route.join('→') : '');
       return;
     }
     if (!chain.active) { el.textContent = ''; return; }

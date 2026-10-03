@@ -63,15 +63,17 @@
       });
     });
     // v13 行星合月（未来 90 天，<4°）——v14: 分离 <1° 标记"极近"
-    findMoonConjunctions(now, now + 90).forEach(function (c) {
-      const near = c.sepDeg < 1.0;
+    // v17 月掩/极近行星 + 月掩昴星团（高精度 0.25 天步进，<1.6°）
+    findMoonCloseApproaches(now - 100, now + 400).forEach(function (c) {
+      const occult = c.sepDeg < 0.9;
+      const isPlei = c.p.key === 'pleiades';
       out.push({
-        d: dateStrOf(c.days), computed: true, key: c.p.key, days: c.days, icon: '🌙', conj: true,
-        n: c.p.name + '合月 · ' + c.sepDeg.toFixed(1) + '°' + (near ? '（极近）' : ''),
-        en: 'Moon near ' + c.p.en + ' · ' + c.sepDeg.toFixed(1) + '°' + (near ? ' (very close)' : ''),
-        t: near
-          ? t8('cal.conjNear', '月球几乎擦过行星——"贴月"级相合，小型望远镜中行星与月缘同框，全年仅数次。')
-          : t8('cal.conjM', '夜空最亮的两盏灯同框——月球与行星相距不足 4°，肉眼即可欣赏"星月相伴"。')
+        d: dateStrOf(c.days), computed: true, key: c.p.key, days: c.days, icon: occult ? '🌠' : '🌙', conj: true,
+        n: (occult ? '月掩' : '极近') + (isPlei ? '昴星团' : c.p.name) + ' · ' + c.sepDeg.toFixed(1) + '°',
+        en: (occult ? 'Moon occults ' : 'Moon near ') + c.p.en + ' · ' + c.sepDeg.toFixed(1) + '°',
+        t: occult
+          ? t8('cal.occult', '月掩级事件——行星或昴星团将贴着月缘掠过（是否掩食取决于观测地，月球视差可达 1°）。小望远镜可见"掩始/复现"。')
+          : t8('cal.conjM', '夜空最亮的两盏灯同框——肉眼即可欣赏"星月相伴"。')
       });
     });
     oppCache = out.sort(function (a, b) { return a.days - b.days; });

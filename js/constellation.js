@@ -119,15 +119,17 @@ window.StarMap = (function () {
       raDecToScene(m.ra, m.dec, v);
       return v;
     });
-    // v16.0 辅星（s2/s3）：小星点 + 与距星的细连线，构成每宿的"星官"小图形
+    // v16.0 辅星（s2/s3）：小星点 + 链式连线（距星→s2→s3），构成每宿"星官"图形
     const auxPts = [], auxLines = [];
     CONST_MANSIONS.forEach(function (m, i) {
-      [['s2'], ['s3']].forEach(function (k) {
-        if (!m[k[0]]) return;
+      const chain = [m.s2, m.s3].filter(Boolean);
+      let from = pts[i];
+      chain.forEach(function (st) {
         const v = new THREE.Vector3();
-        raDecToScene(m[k[0]][0], m[k[0]][1], v);
+        raDecToScene(st[0], st[1], v);
         auxPts.push(v.x, v.y, v.z);
-        auxLines.push(pts[i].x, pts[i].y, pts[i].z, v.x, v.y, v.z);
+        auxLines.push(from.x, from.y, from.z, v.x, v.y, v.z);
+        from = v;
       });
     });
     const auxGeo = new THREE.BufferGeometry();

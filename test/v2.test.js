@@ -6,9 +6,9 @@ const vm = require('vm');
 const ctx = {};
 vm.createContext(ctx);
 const src = fs.readFileSync(__dirname + '/../js/data.js', 'utf8') +
-  "\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS, findOppositions: findOppositions, findElongations: findElongations, findMoonPhases: findMoonPhases, findPlanetConjunctions: findPlanetConjunctions, findMoonConjunctions: findMoonConjunctions, SAN_YUAN: SAN_YUAN };";
+  "\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS, findOppositions: findOppositions, findElongations: findElongations, findMoonPhases: findMoonPhases, findPlanetConjunctions: findPlanetConjunctions, findMoonConjunctions: findMoonConjunctions, SAN_YUAN: SAN_YUAN, findMoonCloseApproaches: findMoonCloseApproaches };";
 vm.runInContext(src, ctx);
-const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS, findOppositions, findElongations, findMoonPhases, findPlanetConjunctions, findMoonConjunctions, SAN_YUAN } = ctx.__x;
+const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS, findOppositions, findElongations, findMoonPhases, findPlanetConjunctions, findMoonConjunctions, SAN_YUAN, findMoonCloseApproaches } = ctx.__x;
 
 const D2R = Math.PI / 180;
 const TAU = Math.PI * 2;
@@ -552,6 +552,22 @@ console.log('\nv14 三垣/极近相合检查：');
   const near = findMoonConjunctions(n0, n0 + 730).filter(c => c.sepDeg < 1.0);
   console.log((near.length >= 1 ? '✅' : '❌') + ' 未来 2 年极近合月（<1°）' + near.length + ' 次');
   near.length >= 1 ? pass++ : fail++;
+}
+
+console.log('\nv17 月掩星引擎检查：');
+{
+  const e1 = findMoonCloseApproaches((Date.UTC(2025, 0, 1) - J2000T) / 86400000, (Date.UTC(2025, 4, 1) - J2000T) / 86400000);
+  const mars = e1.find(e => e.p.key === 'mars' && Math.abs(e.days - (Date.UTC(2025, 1, 9) - J2000T) / 86400000) < 2);
+  console.log((mars ? '✅' : '❌') + ' 2025-02-09 月掩火星（掠边级）' + (mars ? '：分离 ' + mars.sepDeg.toFixed(2) + '°' : ''));
+  mars ? pass++ : fail++;
+  const e2 = findMoonCloseApproaches((Date.UTC(2025, 8, 1) - J2000T) / 86400000, (Date.UTC(2026, 2, 1) - J2000T) / 86400000);
+  const ple = e2.filter(e => e.p.key === 'pleiades' && e.sepDeg < 1.2);
+  console.log((ple.length >= 2 ? '✅' : '❌') + ' 月掩昴星团（半年 ' + ple.length + ' 次，主要驻留期）');
+  ple.length >= 2 ? pass++ : fail++;
+  const now = (Date.UTC(2026, 9, 1) - J2000T) / 86400000;
+  const near90 = findMoonCloseApproaches(now, now + 90);
+  console.log('   未来 90 天掩/极近事件 ' + near90.length + ' 条');
+  check('未来 90 天掩/极近 >= 2 条', near90.length >= 2 ? 1 : 0, 1, 0);
 }
 
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');

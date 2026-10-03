@@ -730,7 +730,7 @@ HELP_ITEMS.push(
  * ============================================================ */
 
 /* 数据版本号：solar-bodies.js 启动时校验，防止浏览器缓存的旧数据与新代码混搭 */
-if (typeof window !== "undefined") window.DATA_VERSION = 20;
+if (typeof window !== "undefined") window.DATA_VERSION = 21;
 
 /* 亮星座（s: 恒星 [赤经小时, 赤纬度]；l: 连线索引；b: 亮星中文名） */
 const CONSTELLATIONS = [
@@ -1304,3 +1304,52 @@ const SAN_YUAN = [
       { n: '宋', ra: 15.58, dec: 10.54 }
     ] }
 ];
+
+/* ============================================================
+ * v17.0 月掩/极近行星检测：0.25 天高精度步进
+ * 月球角半径约 0.26°，分离 <0.7° 即为掩/擦边级事件
+ * ============================================================ */
+function findMoonCloseApproaches(fromDays, toDays, maxSep) {
+  maxSep = maxSep || 1.6;
+  // 内行星 + 昴星团（固定点——月掩昴星团每年数次）
+  const targets = [
+    { key: 'venus', name: '金星', en: 'Venus' },
+    { key: 'mars', name: '火星', en: 'Mars' },
+    { key: 'jupiter', name: '木星', en: 'Jupiter' },
+    { key: 'saturn', name: '土星', en: 'Saturn' },
+    { key: 'pleiades', name: '昴星团', en: 'Pleiades', fixed: [59.95, 4.06] }
+  ];
+  const earth = PLANETS.find(function (p) { return p.key === 'earth'; });
+  const out = [];
+  const a = { x: 0, y: 0, z: 0 }, bv = { x: 0, y: 0, z: 0 };
+  targets.forEach(function (t) {
+    const fixed = !!t.fixed;
+    let prev = null, falling = null;
+    for (let d = fromDays; d <= toDays; d += 0.25) {
+      if (fixed) {
+        // 昴星团为固定赤经赤纬点
+        const R = Math.PI / 180;
+        const lon = t.fixed[0] * R, lat = t.fixed[1] * R;
+        const cl = Math.cos(lat);
+        a.x = cl * Math.cos(lon); a.y = cl * Math.sin(lon); a.z = Math.sin(lat);
+      } else {
+        const p = PLANETS.find(function (q) { return q.key === t.key; });
+        _geoUnitOf(p, earth, d, a);
+      }
+      _moonUnit(d, bv);
+      const sep = _sepDegOf(a, bv);
+      if (prev === null) { prev = sep; falling = null; continue; }
+      if (sep < prev) { falling = true; }
+      else if (sep > prev) {
+        if (falling === true && prev < maxSep) {
+          out.push({ p: t, sepDeg: prev, days: d - 0.25 });
+          d += 3; prev = null; falling = null; continue;
+        }
+        falling = false;
+      }
+      prev = sep;
+    }
+  });
+  out.sort(function (x, y) { return x.days - y.days; });
+  return out;
+}
