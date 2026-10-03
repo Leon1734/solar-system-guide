@@ -119,16 +119,16 @@ window.StarMap = (function () {
       raDecToScene(m.ra, m.dec, v);
       return v;
     });
-    // v16.0 辅星（s2/s3）：小星点 + 链式连线（距星→s2→s3），构成每宿"星官"图形
+    // v18.0 深度宿形：deep 数组（距星+辅星完整序列）链式连线，构成真宿形
     const auxPts = [], auxLines = [];
-    CONST_MANSIONS.forEach(function (m, i) {
-      const chain = [m.s2, m.s3].filter(Boolean);
-      let from = pts[i];
-      chain.forEach(function (st) {
+    CONST_MANSIONS.forEach(function (m) {
+      if (!m.deep) return;
+      let from = null;
+      m.deep.forEach(function (st) {
         const v = new THREE.Vector3();
         raDecToScene(st[0], st[1], v);
         auxPts.push(v.x, v.y, v.z);
-        auxLines.push(from.x, from.y, from.z, v.x, v.y, v.z);
+        if (from) auxLines.push(from.x, from.y, from.z, v.x, v.y, v.z);
         from = v;
       });
     });
