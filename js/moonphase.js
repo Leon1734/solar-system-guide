@@ -77,23 +77,13 @@ window.MoonLab = (function () {
     // 4) 轮廓
     ctx.strokeStyle = 'rgba(180,190,220,0.5)';
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.stroke();
-
-    // 地名（仅照亮侧）
-    ctx.font = '11.5px sans-serif';
-    MOON_FEATURES.forEach(function (f) {
-      const fx = cx + f.x * r, fy = cy - f.y * r;
-      const onLit = litLeft ? f.x < -Math.abs(k) * 0.9 : f.x > Math.abs(k) * 0.9;
-      ctx.fillStyle = onLit ? 'rgba(230,235,250,0.92)' : 'rgba(150,160,185,0.40)';
-      ctx.beginPath(); ctx.arc(fx, fy, 1.6, 0, 6.283); ctx.fill();
-      ctx.fillText(f.n, fx + 5, fy + 4);
-    });
   }
 
+  /* 成因几何小图（v20 移至右栏：太阳—地球—月球夹角俯视） */
   function drawGeometry(ph) {
-    // 成因小图：太阳—地球—月球夹角
-    const gx = W - 130, gy = 86;
+    const gx = 486, gy = 228;
     ctx.fillStyle = '#8fa0b8'; ctx.font = '12px sans-serif';
-    ctx.fillText(t8('moon.geo', '成因：阳光永远照亮朝向太阳的半面'), gx - 96, 26);
+    ctx.fillText(t8('moon.geo', '成因：阳光永远照亮朝向太阳的半面'), gx - 96, 172);
     // 太阳（右）
     const sg = ctx.createRadialGradient(gx + 92, gy, 4, gx + 92, gy, 34);
     sg.addColorStop(0, '#ffd97a'); sg.addColorStop(1, 'rgba(255,180,60,0)');
@@ -119,34 +109,83 @@ window.MoonLab = (function () {
     ctx.fill();
   }
 
+  /* v20.0 布局：左窗 WebGL 3D 月球（moon3d.js），右栏信息 + 成因几何图 */
+  const WX = 186, WY = 228, WR = 148; // 3D 窗口（与 moon3d-canvas 定位严格一致）
+
+  function drawLabels(cx, cy, r, ph) {
+    // 月面地名（天平动偏移：经度平移 Δx=r·λ，纬度 Δy=r·φ）
+    let dx = 0, dy = 0;
+    if (window.Moon3D && Moon3D.isActive()) {
+      const lib = Moon3D.libration(SolarApp.days());
+      dx = lib.lon * r; dy = -lib.lat * r;
+    }
+    ctx.font = '11.5px sans-serif';
+    MOON_FEATURES.forEach(function (f) {
+      const fx = cx + f.x * r + dx, fy = cy - f.y * r + dy;
+      ctx.fillStyle = 'rgba(235,240,252,0.92)';
+      ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4;
+      ctx.beginPath(); ctx.arc(fx, fy, 1.6, 0, 6.283); ctx.fill();
+      ctx.fillText(f.n, fx + 5, fy + 4);
+      ctx.shadowBlur = 0;
+    });
+  }
+
   function draw() {
     if (!ctx) return;
     const ph = phaseInfo();
+    const en = window.I18N && I18N.lang === 'en';
+    const m3d = window.Moon3D && Moon3D.isActive();
     ctx.fillStyle = '#02030a';
     ctx.fillRect(0, 0, W, H);
     // 星点
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     for (let i = 0; i < 50; i++) ctx.fillRect((i * 127.3) % W, (i * 71.7) % H, 1.2, 1.2);
 
-    drawMoon(W * 0.30, H * 0.47, 128, ph);
-    drawGeometry(ph);
+    if (m3d) {
+      // 3D 模式：在 2D 画布上挖出圆窗，露出下层 WebGL 月球
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath(); ctx.arc(WX, WY, WR, 0, 6.283); ctx.fill();
+      ctx.restore();
+      // 窗内补几颗星（挖窗时被一并挖掉）
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      for (let i = 0; i < 14; i++) ctx.fillRect(WX - 130 + (i * 67.7) % 260, WY - 130 + (i * 41.3) % 260, 1.2, 1.2);
+    } else {
+      drawMoon(WX, WY, 132, ph); // WebGL 不可用：2D 回退
+    }
+    drawLabels(WX, WY, 118, ph);
 
-    // 信息
-    const en = window.I18N && I18N.lang === 'en';
+    // 右栏信息
     ctx.fillStyle = '#ffe9b8'; ctx.font = 'bold 17px sans-serif';
     ctx.fillText(en ? ph.nameEn + ' · ' + (ph.illum * 100).toFixed(0) + '% lit' :
-      ph.name + ' · 照亮 ' + (ph.illum * 100).toFixed(0) + '%', 40, 60);
+      ph.name + ' · 照亮 ' + (ph.illum * 100).toFixed(0) + '%', 368, 56);
     ctx.fillStyle = '#c4d2ea'; ctx.font = '13px sans-serif';
     ctx.fillText(t8('moon.age', '月龄 ') + ph.age.toFixed(1) + t8('moon.days', ' 天') +
-      ' · ' + t8('moon.elong', '距角 ') + ph.eAbs.toFixed(0) + '°', 40, 86);
+      ' · ' + t8('moon.elong', '距角 ') + ph.eAbs.toFixed(0) + '°', 368, 84);
+    ctx.fillStyle = '#9fb4d8';
+    ctx.fillText(en ? (ph.waxing ? 'Waxing · lit side on the right' : 'Waning · lit side on the left') :
+      (ph.waxing ? '盈月 · 亮面在右' : '亏月 · 亮面在左'), 368, 106);
     ctx.fillStyle = '#8fa0b8'; ctx.font = '12px sans-serif';
-    ctx.fillText(t8('moon.law', '月相 = 月球绕地球转、被阳光照亮的半面朝向我们的角度不同'), 40, 112);
-    ctx.fillText(t8('moon.sync', '📅 拖动日期，观赏 29.5 天一轮的完整月相变化（模拟月球周期真实，与真实农历日期存在相位差）'), 40, 132);
-    // 侧栏与月亮之间的装饰线
-    ctx.strokeStyle = 'rgba(120,150,210,0.2)';
-    ctx.beginPath(); ctx.moveTo(52, H - 66); ctx.lineTo(W - 52, H - 66); ctx.stroke();
+    ctx.fillText(t8('moon.law', '月相 = 月球绕地球转、被阳光照亮的半面朝向我们的角度不同').slice(0, 26), 368, 130);
+    ctx.fillText(t8('moon.law', '月相 = 月球绕地球转、被阳光照亮的半面朝向我们的角度不同').slice(26), 368, 148);
+
+    drawGeometry(ph);
+
+    // 右栏提示
     ctx.fillStyle = '#5a6a88'; ctx.font = '11.5px sans-serif';
-    ctx.fillText(t8('moon.lock', '月面始终以同一面朝向地球——右侧小图是俯视北黄极的几何关系'), 52, H - 44);
+    ctx.fillText(t8('moon.sync1', '📅 拖动日期，观赏 29.5 天一轮的'), 368, 310);
+    ctx.fillText(t8('moon.sync2', '完整月相变化（真实周期计算）'), 368, 328);
+    ctx.fillText(t8('moon.lock1', '月面始终以同一面朝向地球；'), 368, 362);
+    ctx.fillText(t8('moon.lock2', '月球会轻微"摇摆"——光学天平动'), 368, 380);
+    ctx.strokeStyle = 'rgba(120,150,210,0.2)';
+    ctx.beginPath(); ctx.moveTo(368, 400); ctx.lineTo(688, 400); ctx.stroke();
+    ctx.fillStyle = '#4a5878'; ctx.font = '11px sans-serif';
+    ctx.fillText(t8('moon.shine', '地照：暗面微光来自地球反照，新月前后肉眼可见'), 368, 420);
+
+    // 左下角模式徽标
+    ctx.fillStyle = m3d ? '#7ee0a0' : '#8a92aa'; ctx.font = '11px sans-serif';
+    ctx.fillText(m3d ? t8('moon.theater', '🌗 3D 月相剧场 · WebGL 实时光照') :
+      t8('moon.theater2d', '🌗 月相望远镜 · 2D 模式（WebGL 不可用）'), 40, 414);
   }
 
   function start() {

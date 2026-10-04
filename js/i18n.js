@@ -329,16 +329,23 @@ window.I18N = (function () {
       icsOk: '📅 Calendar file exported — import it into your phone/desktop calendar',
       almanac: 'Next 90 days almanac', today: 'today',
       conjP: 'Two planets within a degree — a naked-eye "double star"; binoculars show both discs together.',
-      conjM: 'The two brightest lights of the night sky side by side — Moon and planet under 4° apart.'
+      conjM: 'The two brightest lights of the night sky side by side — Moon and planet under 4° apart.',
+      occultStar: 'Lunar occultation of a bright star — watch the star wink out at the lunar limb and reappear later; small telescope shows it best.',
+      nearStar: 'The Moon skims right past this bright star — a naked-eye "star-Moon pair-up".'
     },
     moon: {
-      title: '🌙 Moon Telescope', sub: 'The real phase at the simulated moment — drag the date to full moon',
+      title: '🌙 Moon Telescope', sub: 'The real phase at the simulated moment — 3D live-lit theatre, drag the date to watch it turn',
       geo: 'Why: the Sun always lights the half facing it', earth: 'Earth',
       age: 'Moon age ', days: ' d', elong: 'Elongation ',
       law: 'Phases come from the Moon orbiting Earth — we see varying amounts of its lit half',
       sync: '📅 Drag the date to watch a full 29.5-day phase cycle',
       lock: 'The Moon always shows us the same face — the inset is a north-ecliptic-pole view',
-      note: 'Moon phase here follows the simulator’s 27.3-day orbit; it may not match the real-world lunar calendar date'
+      note: 'Moon phase here follows the simulator’s 27.3-day orbit; it may not match the real-world lunar calendar date',
+      sync1: '📅 Drag the date to watch a full', sync2: '29.5-day cycle of real phase changes',
+      lock1: 'The Moon keeps the same face toward Earth;', lock2: 'it sways slightly — optical libration',
+      shine: 'Earthshine: the dark side glows faintly from light bounced off Earth — naked-eye near new moon',
+      theater: '🌗 3D Phase Theatre · WebGL live lighting',
+      theater2d: '🌗 Moon Telescope · 2D mode (WebGL unavailable)'
     },
     qd: { title: '🎲 Daily Question', sub: 'One random question from the whole pool — ⭐ points stack up', next: 'Next ▶' },
     tl: { hint: 'Drag to travel ±100 years · dots are calendar events' },
@@ -347,7 +354,9 @@ window.I18N = (function () {
       right: 'Heliocentric frame: planet velocity + relative velocity',
       gain: 'Trailing pass: the probe steals a sliver of the planet’s momentum — slowed by ~10⁻²⁵, utterly unmeasurable.',
       loss: 'Leading pass: momentum handed back — braking is navigation too.',
-      zero: 'Too far to matter — close in the approach distance.'
+      zero: 'Too far to matter — close in the approach distance.',
+      vvejOn: '🛰 VVEJ expedition start — Venus→Venus→Earth→Jupiter, retrace Galileo’s detour!',
+      vvejDone: 'VVEJ expedition complete! Total speed multiplier ×'
     }
   };
 

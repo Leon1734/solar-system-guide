@@ -74,6 +74,18 @@
           : t8('cal.conjNear2', '极近相合——行星贴着月缘掠过，肉眼可见"星月相依"。')
       });
     });
+    // v20 月掩亮星（黄道 ±7° 一等星/昴星团）
+    findStarOccultations(now - 100, now + 400).forEach(function (o) {
+      out.push({
+        d: dateStrOf(o.days), computed: true, key: o.p, days: o.days,
+        icon: o.occult ? '🌟' : '✨', conj: true,
+        n: (o.occult ? '月掩' : '月伴') + o.name + ' · ' + o.sepDeg.toFixed(2) + '°',
+        en: (o.occult ? 'Lunar occultation of ' : 'Moon near ') + o.en + ' · ' + o.sepDeg.toFixed(2) + '°',
+        t: o.occult
+          ? t8('cal.occultStar', '月掩亮星——恒星被月缘掩入/复现，小望远镜可见"星点消失又重现"。' + o.con + '方向，' + o.mag.toFixed(1) + ' 等星。')
+          : t8('cal.nearStar', '月亮贴着这颗亮星掠过，肉眼即可见"星月相依"。')
+      });
+    });
     // v17 月掩/极近行星 + 月掩昴星团——v19 findLunarOccultations 已覆盖此类事件，跳过避免重复
     // （原 findMoonCloseApproaches 循环整体移除）
     oppCache = out.sort(function (a, b) { return a.days - b.days; });

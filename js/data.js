@@ -730,7 +730,7 @@ HELP_ITEMS.push(
  * ============================================================ */
 
 /* 数据版本号：solar-bodies.js 启动时校验，防止浏览器缓存的旧数据与新代码混搭 */
-if (typeof window !== "undefined") window.DATA_VERSION = 21;
+if (typeof window !== "undefined") window.DATA_VERSION = 22;
 
 /* 亮星座（s: 恒星 [赤经小时, 赤纬度]；l: 连线索引；b: 亮星中文名） */
 const CONSTELLATIONS = [
@@ -860,6 +860,52 @@ function findLunarOccultations(fromDays, toDays) {
         if (falling === true && prev < 1.2) {
           out.push({ p: t.key, name: t.name, sepDeg: prev, occult: prev < 0.95, days: d - step });
           d += (t.key === 'pleiades' ? 3 : 10);
+          prev = null; falling = null; continue;
+        }
+        falling = false;
+      }
+      prev = sep;
+    }
+  });
+  out.sort(function (x, y) { return x.days - y.days; });
+  return out;
+}
+
+/* v20.0 月掩亮星：黄道 ±7° 内的亮星（J2000 黄道坐标 λ/β）
+ * 月球视差 ~0.95°：地心分离 <0.95° 时地球上部分地区可见掩食，
+ * 0.95~1.2° 为月伴（贴月缘掠过） */
+const BRIGHT_ECLIPTIC_STARS = [
+  { key: 'regulus', n: '轩辕十四', en: 'Regulus', mag: 1.40, con: '狮子座', ecl: [149.83, 0.33] },
+  { key: 'spica', n: '角宿一', en: 'Spica', mag: 0.97, con: '室女座', ecl: [203.84, -2.05] },
+  { key: 'aldebaran', n: '毕宿五', en: 'Aldebaran', mag: 0.86, con: '金牛座', ecl: [69.79, -5.47] },
+  { key: 'antares', n: '心宿二', en: 'Antares', mag: 1.06, con: '天蝎座', ecl: [249.66, -4.57] },
+  { key: 'elnath', n: '五车五', en: 'Elnath', mag: 1.65, con: '金牛座', ecl: [83.06, -5.09] },
+  { key: 'pollux', n: '北河三', en: 'Pollux', mag: 1.14, con: '双子座', ecl: [113.66, 6.42] }
+  // 昴星团由 v19 findLunarOccultations 的 pleiades 条目覆盖，此处不重复收录
+];
+
+function findStarOccultations(fromDays, toDays) {
+  const out = [];
+  const R = Math.PI / 180;
+  const a = { x: 0, y: 0, z: 0 }, bv = { x: 0, y: 0, z: 0 };
+  BRIGHT_ECLIPTIC_STARS.forEach(function (s) {
+    const lon = s.ecl[0] * R, lat = s.ecl[1] * R;
+    const cl = Math.cos(lat);
+    a.x = cl * Math.cos(lon); a.y = cl * Math.sin(lon); a.z = Math.sin(lat);
+    let prev = null, falling = null;
+    const step = 0.05;
+    for (let d = fromDays; d <= toDays; d += step) {
+      _moonUnit(d, bv);
+      const sep = _sepDegOf(a, bv);
+      if (prev === null) { prev = sep; continue; }
+      if (sep < prev) { falling = true; }
+      else if (sep > prev) {
+        if (falling === true && prev < 1.2) {
+          out.push({
+            p: 'star-' + s.key, name: s.n, en: s.en, mag: s.mag, con: s.con,
+            sepDeg: prev, occult: prev < 0.95, days: d - step, star: true
+          });
+          d += 8; // 掩星后跳过尾随的近合
           prev = null; falling = null; continue;
         }
         falling = false;

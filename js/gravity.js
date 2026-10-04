@@ -224,25 +224,36 @@ window.GravityLab = (function () {
       else if (chain.active) checkChain();
       else checkMission();
     });
-    // v11.0 伟大远航接力链
+    // v11.0 伟大远航接力链（v20 增加 VVEJ 伽利略远征）
     $('g-chain').addEventListener('click', function () {
-      chain.active = !chain.active;
-      if (chain.active) free.active = false;
-      $('g-free').classList.toggle('active', free.active);
-      this.classList.toggle('active', chain.active);
-      if (chain.active) {
-        chain.stage = 0; chain.mult = 1.0;
-        applyChainStage();
-        toast(t8('gr.chainOn', '🔗 接力链挑战开始——复现旅行者号的伟大远航！'));
-      } else {
-        $('g-chain-status').textContent = '';
-      }
+      chainSet = CHAIN_VOYAGER;
+      chain.active = true; free.active = false;
+      $('g-free').classList.remove('active');
+      $('g-chain2').classList.remove('active');
+      this.classList.add('active');
+      chain.stage = 0; chain.mult = 1.0;
+      applyChainStage();
+      toast(t8('gr.chainOn', '🔗 接力链挑战开始——复现旅行者号的伟大远航！'));
+      checkChainUI();
+    });
+    $('g-chain2').addEventListener('click', function () {
+      chainSet = CHAIN_VVEJ;
+      chain.active = true; free.active = false;
+      $('g-free').classList.remove('active');
+      $('g-chain').classList.remove('active');
+      this.classList.add('active');
+      chain.stage = 0; chain.mult = 1.0;
+      applyChainStage();
+      toast(t8('gr.vvejOn', '🛰 VVEJ 远征开始——金星→金星→地球→木星，复现伽利略号的迂回航线！'));
       checkChainUI();
     });
     // v13 自由接力：任意行星/方向累积速度倍率
     $('g-free').addEventListener('click', function () {
       free.active = !free.active;
-      if (free.active) { chain.active = false; $('g-chain').classList.remove('active'); }
+      if (free.active) {
+        chain.active = false;
+        $('g-chain').classList.remove('active'); $('g-chain2').classList.remove('active');
+      }
       this.classList.toggle('active', free.active);
       if (free.active) {
         free.mult = 1.0; free.reached = false;
@@ -279,16 +290,24 @@ window.GravityLab = (function () {
   }
 
   /* v11.0 接力链：地球出发 → 木星加速 → 土星冲刺 → 飞出太阳系 */
-  const CHAIN = [
+  /* v20.0 双远征：旅行者号三段链 + 伽利略号 VVEJ 四段链（need 为单段倍率） */
+  const CHAIN_VOYAGER = [
     { key: 'earth', need: 1.03, text: '地球出发：后掠地球，让速度倍率 ≥ ×1.03（挣脱引力怀抱）', done: '第 1 站完成！虽然只有百分之几，火星转移轨道已到手。' },
-    { key: 'jupiter', need: 1.40, text: '第 2 站木星：后掠木星（b ≤ 1.0），速度倍率累计 ≥ ×1.40', done: '第 2 站完成！木星把你甩向土星轨道——这就是旅行者的路线。' },
-    { key: 'saturn', need: 1.55, text: '第 3 站土星：后掠土星（b ≤ 1.2），累计 ≥ ×1.55 即超越太阳系逃逸速度', done: '🏆 伟大远航完成！你已复现旅行者号的壮举——下一站：星际空间。' }
+    { key: 'jupiter', need: 1.40, text: '第 2 站木星：后掠木星（b ≤ 1.0），速度倍率 ≥ ×1.40', done: '第 2 站完成！木星把你甩向土星轨道——这就是旅行者的路线。' },
+    { key: 'saturn', need: 1.55, text: '第 3 站土星：后掠土星（b ≤ 1.2），倍率 ≥ ×1.55 即超越太阳系逃逸速度', done: '🏆 伟大远航完成！你已复现旅行者号的壮举——下一站：星际空间。' }
   ];
+  const CHAIN_VVEJ = [
+    { key: 'venus', need: 1.10, text: '第 1 站金星：后掠金星（b ≈ 0.6），本段倍率 ≥ ×1.10', done: '第 1 站完成！金星把你压向更低的轨道——1989 年伽利略号正是这样起航。' },
+    { key: 'venus', need: 1.18, text: '第 2 站金星：再来一次！后掠金星（b ≈ 0.5），本段倍率 ≥ ×1.18', done: '第 2 站完成！两次金星借力到手——VVEJ 的第一个 V 已经翻倍。' },
+    { key: 'earth', need: 1.15, text: '第 3 站地球：后掠地球（b ≈ 0.5），本段倍率 ≥ ×1.15——决定性的一脚', done: '第 3 站完成！地球弹弓把你甩向外太阳系（VEEG 三级跳完成）。' },
+    { key: 'jupiter', need: 1.40, text: '第 4 站木星：后掠木星（b ≤ 1.2），本段倍率 ≥ ×1.40 即刻入轨', done: '🏆 VVEJ 远征完成！你复现了伽利略号 6 年的迂回航线——1995 年它正是这样抵达木星。' }
+  ];
+  let chainSet = CHAIN_VOYAGER;
   const chain = { active: false, stage: 0, mult: 1.0 };
 
   function applyChainStage() {
-    if (chain.stage >= CHAIN.length) return;
-    const st = CHAIN[chain.stage];
+    if (chain.stage >= chainSet.length) return;
+    const st = chainSet[chain.stage];
     planetKey = st.key;
     side = 'back';
     document.querySelectorAll('.g-planet').forEach(function (b2) {
@@ -299,8 +318,8 @@ window.GravityLab = (function () {
     });
   }
   function checkChain() {
-    if (!chain.active || chain.stage >= CHAIN.length) return;
-    const st = CHAIN[chain.stage];
+    if (!chain.active || chain.stage >= chainSet.length) return;
+    const st = chainSet[chain.stage];
     const sres = sim(b, side, planetKey);
     const stageMult = sres.vout / sres.vin;
     if (planetKey !== st.key || side !== 'back' || stageMult < st.need) {
@@ -313,7 +332,7 @@ window.GravityLab = (function () {
     $('g-result').style.color = '#9fe8a8';
     if (window.Sfx) window.Sfx.success();
     chain.stage++;
-    if (chain.stage < CHAIN.length) applyChainStage();
+    if (chain.stage < chainSet.length) applyChainStage();
     checkChainUI();
   }
   function checkChainUI() {
@@ -326,12 +345,14 @@ window.GravityLab = (function () {
       return;
     }
     if (!chain.active) { el.textContent = ''; return; }
-    if (chain.stage >= CHAIN.length) {
-      el.textContent = '🏆 ' + t8('gr.chainDone', '伟大远航完成！累计速度倍率 ×') + chain.mult.toFixed(2);
+    if (chain.stage >= chainSet.length) {
+      el.textContent = '🏆 ' + (chainSet === CHAIN_VVEJ ?
+        t8('gr.vvejDone', 'VVEJ 远征完成！累计速度倍率 ×') :
+        t8('gr.chainDone', '伟大远航完成！累计速度倍率 ×')) + chain.mult.toFixed(2);
       return;
     }
-    const st = CHAIN[chain.stage];
-    el.textContent = '🔗 ' + t8('gr.chainStage', '第 ') + (chain.stage + 1) + '/' + CHAIN.length + t8('gr.chainStation', '站') +
+    const st = chainSet[chain.stage];
+    el.textContent = '🔗 ' + t8('gr.chainStage', '第 ') + (chain.stage + 1) + '/' + chainSet.length + t8('gr.chainStation', '站') +
       ' · ' + t8('gr.chainSpeed', '累计 ×') + chain.mult.toFixed(2) + (EN() ? ' → need ×' + st.need : ' → 需 ×' + st.need);
   }
   function EN() { return window.I18N && I18N.lang === 'en'; }

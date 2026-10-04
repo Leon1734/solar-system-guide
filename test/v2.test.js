@@ -6,9 +6,9 @@ const vm = require('vm');
 const ctx = {};
 vm.createContext(ctx);
 const src = fs.readFileSync(__dirname + '/../js/data.js', 'utf8') +
-  "\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS, findOppositions: findOppositions, findElongations: findElongations, findMoonPhases: findMoonPhases, findPlanetConjunctions: findPlanetConjunctions, findMoonConjunctions: findMoonConjunctions, SAN_YUAN: SAN_YUAN, findMoonCloseApproaches: findMoonCloseApproaches };";
+  "\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS, findOppositions: findOppositions, findElongations: findElongations, findMoonPhases: findMoonPhases, findPlanetConjunctions: findPlanetConjunctions, findMoonConjunctions: findMoonConjunctions, SAN_YUAN: SAN_YUAN, findMoonCloseApproaches: findMoonCloseApproaches, findStarOccultations: findStarOccultations, BRIGHT_ECLIPTIC_STARS: BRIGHT_ECLIPTIC_STARS };";
 vm.runInContext(src, ctx);
-const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS, findOppositions, findElongations, findMoonPhases, findPlanetConjunctions, findMoonConjunctions, SAN_YUAN, findMoonCloseApproaches } = ctx.__x;
+const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS, findOppositions, findElongations, findMoonPhases, findPlanetConjunctions, findMoonConjunctions, SAN_YUAN, findMoonCloseApproaches, findStarOccultations, BRIGHT_ECLIPTIC_STARS } = ctx.__x;
 
 const D2R = Math.PI / 180;
 const TAU = Math.PI * 2;
@@ -568,6 +568,48 @@ console.log('\nv17 月掩星引擎检查：');
   const near90 = findMoonCloseApproaches(now, now + 90);
   console.log('   未来 90 天掩/极近事件 ' + near90.length + ' 条');
   check('未来 90 天掩/极近 >= 2 条', near90.length >= 2 ? 1 : 0, 1, 0);
+}
+
+console.log('\nv20 月掩亮星引擎检查（BRIGHT_ECLIPTIC_STARS）：');
+{
+  // 星表合法性：6 颗、黄纬 ±7° 内（月球天平动极限+视差才够得着）、键唯一
+  check('黄道亮星表 6 颗', BRIGHT_ECLIPTIC_STARS.length, 6, 0);
+  check('亮星黄纬均在 ±7° 内', BRIGHT_ECLIPTIC_STARS.every(s => Math.abs(s.ecl[1]) <= 7) ? 1 : 0, 1, 0);
+  check('亮星键唯一', new Set(BRIGHT_ECLIPTIC_STARS.map(s => s.key)).size === BRIGHT_ECLIPTIC_STARS.length ? 1 : 0, 1, 0);
+  // 物理锚点：2026 全年——轩辕十四（β=0.33°）与心宿二（β=-4.57°）均处于掩星季，
+  // 各应发生 ≥2 次月掩（真实历表：2026 年两星均为每月一掩系列）
+  const d26a = (Date.UTC(2026, 0, 1, 12) - J2000T) / 86400000;
+  const ev26 = findStarOccultations(d26a, d26a + 365);
+  const reg = ev26.filter(e => e.p === 'star-regulus' && e.occult);
+  const ant = ev26.filter(e => e.p === 'star-antares' && e.occult);
+  console.log('   2026 年掩星事件：轩辕十四 ' + reg.length + ' 次，心宿二 ' + ant.length + ' 次');
+  check('2026 轩辕十四月掩 >= 2 次', reg.length >= 2 ? 1 : 0, 1, 0);
+  check('2026 心宿二月掩 >= 2 次', ant.length >= 2 ? 1 : 0, 1, 0);
+  // 不变量：排序 / 阈值 / 掩食判定自洽
+  check('掩星事件按日期排序', ev26.every((e, i) => i === 0 || ev26[i - 1].days <= e.days) ? 1 : 0, 1, 0);
+  check('月伴阈值 < 1.2°', ev26.every(e => e.sepDeg < 1.2) ? 1 : 0, 1, 0);
+  check('掩食判定 < 0.95° 与标志自洽', ev26.every(e => !e.occult || e.sepDeg < 0.95) ? 1 : 0, 1, 0);
+}
+
+console.log('\nv20 VVEJ 四段远征可达性（金星→金星→地球→木星）：');
+{
+  const GP = { jupiter: [1.2, 1.00], saturn: [0.70, 0.72], earth: [0.15, 0.30], venus: [0.10, 0.28], mercury: [0.04, 0.10] };
+  const stages = [['venus', 1.10], ['venus', 1.18], ['earth', 1.15], ['jupiter', 1.40]];
+  stages.forEach((st, i) => {
+    let best = 0;
+    for (let b = 0.4; b <= 3; b += 0.05) {
+      const r = sling(b, 'back', GP[st[0]][0], GP[st[0]][1]);
+      best = Math.max(best, r.voutMag / r.vinMag);
+    }
+    console.log('   第' + (i + 1) + '站 ' + st[0] + ' 需 ×' + st[1] + ' → 最优可达 ×' + best.toFixed(3));
+    check('VVEJ 第' + (i + 1) + '站可达', best >= st[1] ? 1 : 0, 1, 0);
+  });
+  // 3D 月相模块文件与关键要素
+  const m3 = fs.readFileSync(__dirname + '/../js/moon3d.js', 'utf8');
+  check('moon3d.js 含方向光照', m3.indexOf('DirectionalLight') > 0 ? 1 : 0, 1, 0);
+  check('moon3d.js 含天平动模型', m3.indexOf('libration') > 0 ? 1 : 0, 1, 0);
+  check('moon3d.js 含地照补光', m3.indexOf('earthShine') > 0 ? 1 : 0, 1, 0);
+  check('index.html 挂载 3D 月相画布', fs.readFileSync(__dirname + '/../index.html', 'utf8').indexOf('moon3d-canvas') > 0 ? 1 : 0, 1, 0);
 }
 
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');
