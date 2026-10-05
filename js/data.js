@@ -730,7 +730,7 @@ HELP_ITEMS.push(
  * ============================================================ */
 
 /* 数据版本号：solar-bodies.js 启动时校验，防止浏览器缓存的旧数据与新代码混搭 */
-if (typeof window !== "undefined") window.DATA_VERSION = 22;
+if (typeof window !== "undefined") window.DATA_VERSION = 23;
 
 /* 亮星座（s: 恒星 [赤经小时, 赤纬度]；l: 连线索引；b: 亮星中文名） */
 const CONSTELLATIONS = [
@@ -965,7 +965,40 @@ const DEEPSKY = [
   { n: '蟹状星云', e: 'Crab Nebula · M1', ra: 5.58, dec: 22.01, color: 0xc8e8d8,
     desc: '公元 1054 年宋代天文学家记录的"天关客星"超新星遗迹——一颗大质量恒星爆炸后的残骸。',
     descEn: 'Remnant of the AD 1054 supernova, recorded by Song-dynasty astronomers as a “guest star”.',
-    facts: ['《宋史·天文志》记载：至和元年"天关客星，昼见如太白"，23 天后才隐去。', '如今它已膨胀成直径约 11 光年的气体壳。', '中心藏有一颗每秒自转约 30 圈的中子星（脉冲星），像灯塔般周期性扫过地球。'] }
+    facts: ['《宋史·天文志》记载：至和元年"天关客星，昼见如太白"，23 天后才隐去。', '如今它已膨胀成直径约 11 光年的气体壳。', '中心藏有一颗每秒自转约 30 圈的中子星（脉冲星），像灯塔般周期性扫过地球。'] },
+  /* v21.0 深空扩容 4→12：北天经典 + 南天两景（ra 单位小时，J2000） */
+  { n: '三角座星系', e: 'Triangulum Galaxy · M33', ra: 1.564, dec: 30.66, color: 0xb8c8e0,
+    desc: '本星系群第三大星系，仙女座星系的"妹妹"——300 万光年外的旋涡星系，双筒镜里是一团朦胧的雾斑。',
+    descEn: 'The third-largest galaxy in the Local Group — a spiral 3 million light-years away, a hazy patch in binoculars.',
+    facts: ['比仙女座星系更远 50 万光年，却更暗——因为它的恒星更稀疏。', '它是肉眼极限的挑战目标：要在极暗的夜空才可能直接看到。', '其中的恒星形成区 NGC 604 是本星系群最大的恒星摇篮之一。'] },
+  { n: '英仙双星团', e: 'Double Cluster · NGC 869/884', ra: 2.35, dec: 57.14, color: 0xd8e8f0,
+    desc: '英仙座里肩并肩的两团年轻星团，像一对"双胞胎"——双筒望远镜的招牌景观。',
+    descEn: 'Two young open clusters side by side in Perseus — a signature binocular showpiece.',
+    facts: ['两个星团相距仅数百光年，可能是同一片分子云诞生的"双黄蛋"。', '每团各有约 300 颗蓝白色年轻恒星，年龄仅约 1000 万年。', '它们位于银河系英仙臂上，距离约 7500 光年。'] },
+  { n: '武仙座大星团', e: 'Great Cluster · M13', ra: 16.695, dec: 36.46, color: 0xe8e0c8,
+    desc: '北天最壮观的球状星团：30 多万颗老年恒星挤成一个直径 145 光年的"银球"。',
+    descEn: 'The finest globular cluster of the northern sky — over 300,000 ancient stars packed into a 145-light-year sphere.',
+    facts: ['球状星团是星系里的"活化石"——M13 里的恒星年龄接近 120 亿年。', '其中心恒星密度是太阳附近的数百倍——那里的"夜空"亮如满月。', '1974 年人类曾用阿雷西博望远镜向它发送过第一条"银河系名片"。'] },
+  { n: '环状星云', e: 'Ring Nebula · M57', ra: 18.893, dec: 33.03, color: 0xa8e0d0,
+    desc: '天琴座里一枚"烟圈"：类太阳恒星临终前抛出的外壳，被残核的紫外光点燃成青绿色光环。',
+    descEn: 'A "smoke ring" in Lyra — the shed envelope of a dying sun-like star, lit up by its hot core.',
+    facts: ['太阳 50 亿年后也会这样变成行星状星云——这是太阳的"预告片"。', '环其实是个气泡壳，只是我们恰好从侧面看才像"环"。', '中心的白矮星表面温度高达 12 万℃。'] },
+  { n: '哑铃星云', e: 'Dumbbell Nebula · M27', ra: 19.995, dec: 22.72, color: 0xc8e0e8,
+    desc: '狐狸座里的"苹果核"：又一个行星状星云，双筒镜下呈哑铃状的光斑。',
+    descEn: 'The "apple core" of Vulpecula — another planetary nebula, dumbbell-shaped in small scopes.',
+    facts: ['它约在 1 万年前被抛出，正以每秒约 30 km 膨胀。', '是北天最亮行星状星云之一，小望远镜即可见。', '与 M57 不同，我们是从"侧面"看它的壳——所以不是环而是哑铃。'] },
+  { n: '面纱星云', e: 'Veil Nebula · NGC 6960', ra: 20.89, dec: 30.72, color: 0xa0c8e8,
+    desc: '天鹅座里一张巨大的"蛛网"：约 1 万年前超新星爆炸的残骸，铺满 3 个满月宽的天区。',
+    descEn: 'A vast "cosmic cobweb" in Cygnus — the 10,000-year-old remnant of a supernova, three full moons wide.',
+    facts: ['爆炸时的真身是一颗约 20 倍太阳质量的恒星。', '冲击波仍以每秒上百公里速度扫过星际气体，把它加热发光。', '整个遗迹直径约 110 光年——月球大小的气体球在它面前像尘埃。'] },
+  { n: '北美洲星云', e: 'North America Nebula · NGC 7000', ra: 20.98, dec: 44.33, color: 0xe8a0a0,
+    desc: '天鹅座亮星天津四附近的红色星云，轮廓酷似北美洲地图——"墨西哥湾"清晰可辨。',
+    descEn: 'A red emission nebula near Deneb whose outline strikingly resembles the map of North America.',
+    facts: ['发光的是被年轻恒星电离的氢——红色是氢的"签名色"。', '它可能的"照明者"藏在"墨西哥湾"后面的暗带里。', '距离约 2600 光年，真实大小约 90 光年宽。'] },
+  { n: '船底座大星云', e: 'Carina Nebula · NGC 3372', ra: 10.752, dec: -59.87, color: 0xe8c8a8,
+    desc: '南天最壮丽的恒星摇篮，比猎户大星云大得多——韦伯望远镜"宇宙悬崖"名片的真正舞台。',
+    descEn: 'The most spectacular stellar nursery of the southern sky, far larger than Orion — home of Webb’s “Cosmic Cliffs”.',
+    facts: ['星云里住着"海山二"——一对即将爆炸的超大质量双星，质量超太阳 100 倍。', '1843 年海山二曾短暂成为全天第二亮星，随后又"装死"暗了下去。', '北半球大部分地区看不到它——想看要去北纬 30° 以南。'] }
 ];
 
 /* v8.0 观测地点预设（lat 纬度北正 / lon 经度东正） */
@@ -1018,7 +1051,18 @@ const EXTRA_QUIZ = [
   { q: '月球造成地球潮汐，那地球对月球有影响吗？', options: ['有——月球被潮汐锁定', '没有', '只影响轨道倾角'], answer: 0, explain: '月球自转被锁定为与公转同步，永远一面对地。' },
   { q: '柯伊伯带位于哪里？', options: ['小行星带内', '海王星外 30–50 AU', '奥尔特云内侧 100 AU 外'], answer: 1, explain: '短周期彗星与冥王星的家园。' },
   { q: '土星环的主要成分是？', options: ['岩石块', '水冰颗粒', '气体'], answer: 1, explain: '从微米级冰尘到数米级冰块。' },
-  { q: '哪位天文学家首先用望远镜发现了木星的四颗大卫星？', options: ['开普勒', '伽利略', '牛顿'], answer: 1, explain: '1610 年，第一次看到"地球之外的世界在转动"。' }
+  { q: '哪位天文学家首先用望远镜发现了木星的四颗大卫星？', options: ['开普勒', '伽利略', '牛顿'], answer: 1, explain: '1610 年，第一次看到"地球之外的世界在转动"。' },
+  /* v21.0 题库加餐 +10：月相/掩星/引力弹弓/深空 */
+  { q: '上弦月的亮面朝哪边？', options: ['朝西（右侧亮）', '朝东（左侧亮）', '两面一样亮'], answer: 0, explain: '盈月上半夜见，亮面朝西——"上上上西西"口诀。' },
+  { q: "'月掩星'发生时，星星去哪了？", options: ['被月面挡住了', '熄灭了', '被地球影子遮住了'], answer: 0, explain: '月球从恒星前面经过——月亮的"影子戏"，小望远镜能看到星点消失又重现。' },
+  { q: '新月前后月暗面泛起的微光（地照）来自？', options: ['地球反射的阳光', '月球自己发光', '大气辉光'], answer: 0, explain: '地球像一面小镜子把阳光反弹给月球暗面——"新月抱旧月"。' },
+  { q: '引力弹弓加速时，被"借"走动量的行星会怎样？', options: ['被减速约 10⁻²⁵，完全测不出', '明显变慢', '轨道立刻改变'], answer: 0, explain: '动量守恒，但行星质量太大——旅行者号飞过木星，木星减速 10⁻²⁵ 量级。' },
+  { q: '伽利略号去木星走"金星→金星→地球→木星"，为什么不直飞？', options: ['小推力火箭借力省燃料', '直飞会撞上小行星带', '木星那时候不在那'], answer: 0, explain: '航天飞机的火箭推不动直飞航线——VVEJ 四次借力凑够速度。' },
+  { q: '肉眼可见最遥远的天体是？', options: ['仙女座星系（254 万光年）', '蟹状星云（6500 光年）', '昴星团（444 光年）'], answer: 0, explain: '上千亿颗恒星的微光汇聚成一枚朦胧纺锤，秋夜远离光害可见。' },
+  { q: '太阳 50 亿年后的"结局预告片"是？', options: ['变成环状星云那样的行星状星云', '立刻爆炸成超新星', '变成黑洞'], answer: 0, explain: '类太阳恒星临终抛壳成行星状星云，残核变白矮星——M57 就是样板。' },
+  { q: '行星"冲日"时，它何时最适合观测？', options: ['日落升起、整夜可见', '只能后半夜看', '只能在白天看'], answer: 0, explain: '冲日时行星与太阳此升彼落，整夜在天，且距离最近、视面最大。' },
+  { q: '英仙双星团"双"在哪？', options: ['两个星团肩并肩', '一颗星两颗核', '双筒才看得见'], answer: 0, explain: 'NGC 869/884 两团年轻星团相距仅数百光年，可能是同一片云的双黄蛋。' },
+  { q: '月球天平动让我们实际能看到多少月面？', options: ['约 59%', '正好 50%', '100%'], answer: 0, explain: '月球会轻微"摇摆"（天平动），再加上边缘的透视，能瞄到近侧之外的 9%。' }
 ];
 
 /* 月面地名（x: [-1,1] 右正，y: 上正） */
@@ -1180,6 +1224,24 @@ function _oppHelioRates(p, days) {
     z: (sw * si) * xp + (cw * si) * yp
   };
 }
+/* v21.0 极值细化：在粗扫描峰位附近 0.005 天步进重扫，时刻精确到 ~7 分钟 */
+function _refineMax(fn, lo, hi) {
+  let best = lo, bestV = -Infinity;
+  for (let d = lo; d <= hi; d += 0.005) {
+    const v = fn(d);
+    if (v > bestV) { bestV = v; best = d; }
+  }
+  return best;
+}
+function _refineMin(fn, lo, hi) {
+  let best = lo, bestV = Infinity;
+  for (let d = lo; d <= hi; d += 0.005) {
+    const v = fn(d);
+    if (v < bestV) { bestV = v; best = d; }
+  }
+  return best;
+}
+
 function findOppositions(fromDays, toDays) {
   const targets = ['mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
   const earth = PLANETS.find(function (p) { return p.key === 'earth'; });
@@ -1195,7 +1257,12 @@ function findOppositions(fromDays, toDays) {
       if (prevSep >= 0 && prevSep > 3.06 && sep < prevSep && sep > 3.06) {
         out.push({
           key: key, name: p.name + '冲日', en: p.en + ' at opposition',
-          days: d - 0.5
+          days: _refineMax(function (dd) {
+            const eP = _oppHelioRates(earth, dd), pP = _oppHelioRates(p, dd);
+            let el2 = Math.atan2(pP.y - eP.y, pP.x - eP.x) - Math.atan2(-eP.y, -eP.x);
+            el2 = ((el2 % 6.2832) + 6.2832) % 6.2832;
+            return Math.min(el2, 6.2832 - el2);
+          }, d - 1.5, d + 0.5)
         });
         d += 100; // 同一冲日附近跳过
       }
@@ -1230,15 +1297,17 @@ function findElongations(fromDays, toDays) {
       if (prev === null) { prev = e; rising = null; continue; } // 恢复扫描不预设方向，避免峰后下降段误判为峰
       if (e > prev) {
         if (rising === false && prev < -0.2) { // 负谷 → 西大距
+          const dd = _refineMin(function (dd2) { return _signedElong(p, earth, dd2); }, d - 2, d);
           out.push({ key: key, name: p.name, en: p.en, type: 'west',
-            deg: -prev * 180 / Math.PI, days: d - 0.5 });
+            deg: -_signedElong(p, earth, dd) * 180 / Math.PI, days: dd });
           d += 40; prev = null; rising = null; continue;
         }
         rising = true;
       } else if (e < prev) {
         if (rising === true && prev > 0.2) {   // 正峰 → 东大距
+          const dd = _refineMax(function (dd2) { return _signedElong(p, earth, dd2); }, d - 2, d);
           out.push({ key: key, name: p.name, en: p.en, type: 'east',
-            deg: prev * 180 / Math.PI, days: d - 0.5 });
+            deg: _signedElong(p, earth, dd) * 180 / Math.PI, days: dd });
           d += 40; prev = null; rising = null; continue;
         }
         rising = false;

@@ -14,8 +14,40 @@ window.Moon3D = (function () {
   const $ = function (id) { return document.getElementById(id); };
   let ok = false, renderer = null, scene = null, camera = null;
   let mesh = null, sunLight = null, tAcc = 0, timer = null;
+  let yawOff = 0, pitchOff = 0; // 拖拽偏移（弧度）
+  let dragging = false, lastX = 0, lastY = 0;
 
   const D2R = Math.PI / 180;
+
+  /* ---------- v21.0 拖拽：在 2D 画布窗内按住拖动即可旋转月球，双击复位 ---------- */
+  function bindDrag(canvas2d) {
+    if (canvas2d.__moon3dDrag) return;
+    canvas2d.__moon3dDrag = true;
+    canvas2d.style.cursor = 'grab';
+    canvas2d.addEventListener('pointerdown', function (e) {
+      const rc = canvas2d.getBoundingClientRect();
+      const sc = canvas2d.width / rc.width;
+      const mx = (e.clientX - rc.left) * sc, my = (e.clientY - rc.top) * sc;
+      const w = window.MoonLab && MoonLab.MOON_WINDOW;
+      if (!w) return;
+      const dx = mx - w.x, dy = my - w.y;
+      if (dx * dx + dy * dy > w.r * w.r) return; // 只在月球窗内生效
+      dragging = true; lastX = e.clientX; lastY = e.clientY;
+      canvas2d.style.cursor = 'grabbing';
+      try { canvas2d.setPointerCapture(e.pointerId); } catch (err) { }
+    });
+    canvas2d.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      yawOff += (e.clientX - lastX) * 0.008;
+      pitchOff += (e.clientY - lastY) * 0.008;
+      pitchOff = Math.max(-1.2, Math.min(1.2, pitchOff));
+      lastX = e.clientX; lastY = e.clientY;
+    });
+    const end = function () { dragging = false; canvas2d.style.cursor = 'grab'; };
+    canvas2d.addEventListener('pointerup', end);
+    canvas2d.addEventListener('pointercancel', end);
+    canvas2d.addEventListener('dblclick', function () { yawOff = 0; pitchOff = 0; });
+  }
 
   /* ---------- 程序化月面贴图：TEX.moon 陨石坑基底 + 真实位置月海 ---------- */
   function buildMoonTexture() {
@@ -115,9 +147,9 @@ window.Moon3D = (function () {
     // 相机系太阳方向 s = (sin e, 0, -cos e)，再加 ~17° 倾角呈现经典斜终止线
     const sx = Math.sin(e), sz = -Math.cos(e), tilt = -0.30;
     sunLight.position.set(sx * Math.cos(tilt) * 10, sx * Math.sin(tilt) * 10, sz * 10);
-    // 天平动 + 固定轴倾（视觉立体感）
+    // 天平动 + 固定轴倾（视觉立体感）+ 拖拽偏移
     const lib = libration(days);
-    mesh.rotation.set(lib.lat, -lib.lon, -0.06);
+    mesh.rotation.set(lib.lat + pitchOff, -lib.lon + yawOff, -0.06);
     // 缓慢相机漂移（半径 0.05 → 屏幕上约 ±6px 视差）
     tAcc += 0.05;
     camera.position.set(0.05 * Math.sin(tAcc * 0.13), 0.04 * Math.cos(tAcc * 0.10), 3.3);
@@ -128,6 +160,8 @@ window.Moon3D = (function () {
   function start(canvas, getDays) {
     if (!ok && !init(canvas)) { window.__moon3dOk = false; return; }
     window.__moon3dOk = true;
+    const c2d = $('moon-canvas');
+    if (c2d) bindDrag(c2d); // v21.0 拖拽事件绑在 2D 上层画布（接收指针的层）
     if (!timer) timer = setInterval(function () { render(getDays()); }, 50);
     render(getDays());
   }

@@ -184,7 +184,7 @@ window.MoonLab = (function () {
 
     // 左下角模式徽标
     ctx.fillStyle = m3d ? '#7ee0a0' : '#8a92aa'; ctx.font = '11px sans-serif';
-    ctx.fillText(m3d ? t8('moon.theater', '🌗 3D 月相剧场 · WebGL 实时光照') :
+    ctx.fillText(m3d ? t8('moon.theater', '🌗 3D 月相剧场 · 拖拽旋转月球') :
       t8('moon.theater2d', '🌗 月相望远镜 · 2D 模式（WebGL 不可用）'), 40, 414);
   }
 
@@ -205,5 +205,5 @@ window.MoonLab = (function () {
     else if (!timer) start();
   }, 500);
 
-  return { start: start, stop: stop, phaseInfo: phaseInfo };
+  return { start: start, stop: stop, phaseInfo: phaseInfo, MOON_WINDOW: { x: WX, y: WY, r: WR } };
 })();

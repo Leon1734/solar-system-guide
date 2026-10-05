@@ -331,7 +331,11 @@ window.I18N = (function () {
       conjP: 'Two planets within a degree — a naked-eye "double star"; binoculars show both discs together.',
       conjM: 'The two brightest lights of the night sky side by side — Moon and planet under 4° apart.',
       occultStar: 'Lunar occultation of a bright star — watch the star wink out at the lunar limb and reappear later; small telescope shows it best.',
-      nearStar: 'The Moon skims right past this bright star — a naked-eye "star-Moon pair-up".'
+      nearStar: 'The Moon skims right past this bright star — a naked-eye "star-Moon pair-up".',
+      ut: 'At',
+      visOk: 'Visible locally (above your horizon at night)',
+      visDay: 'Target above horizon but it is daytime',
+      visLow: 'Target below your horizon at event time'
     },
     moon: {
       title: '🌙 Moon Telescope', sub: 'The real phase at the simulated moment — 3D live-lit theatre, drag the date to watch it turn',
@@ -344,7 +348,7 @@ window.I18N = (function () {
       sync1: '📅 Drag the date to watch a full', sync2: '29.5-day cycle of real phase changes',
       lock1: 'The Moon keeps the same face toward Earth;', lock2: 'it sways slightly — optical libration',
       shine: 'Earthshine: the dark side glows faintly from light bounced off Earth — naked-eye near new moon',
-      theater: '🌗 3D Phase Theatre · WebGL live lighting',
+      theater: '🌗 3D Phase Theatre · drag to rotate the Moon',
       theater2d: '🌗 Moon Telescope · 2D mode (WebGL unavailable)'
     },
     qd: { title: '🎲 Daily Question', sub: 'One random question from the whole pool — ⭐ points stack up', next: 'Next ▶' },

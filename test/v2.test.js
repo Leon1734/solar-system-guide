@@ -300,10 +300,10 @@ radOk ? pass++ : fail++;
 }
 
 console.log('\nv8 地平坐标/深空天体/观测点检查：');
-// 深空天体：4 个、坐标合法、中英文案齐
-const dsOk = DEEPSKY.length === 4 &&
+// 深空天体：≥12 个（v21 扩容）、坐标合法、中英文案齐
+const dsOk = DEEPSKY.length >= 12 &&
   DEEPSKY.every(d => d.ra >= 0 && d.ra < 24 && Math.abs(d.dec) <= 90 && d.desc && d.descEn && d.facts.length >= 2);
-console.log((dsOk ? '✅' : '❌') + ' 深空天体 4 项，坐标与文案合法');
+console.log((dsOk ? '✅' : '❌') + ' 深空天体 ' + DEEPSKY.length + ' 项，坐标与文案合法');
 dsOk ? pass++ : fail++;
 // 观测点：≥8 城、纬度/经度范围合法
 const obsOk = OBSERVATORIES.length >= 8 &&
@@ -610,6 +610,54 @@ console.log('\nv20 VVEJ 四段远征可达性（金星→金星→地球→木�
   check('moon3d.js 含天平动模型', m3.indexOf('libration') > 0 ? 1 : 0, 1, 0);
   check('moon3d.js 含地照补光', m3.indexOf('earthShine') > 0 ? 1 : 0, 1, 0);
   check('index.html 挂载 3D 月相画布', fs.readFileSync(__dirname + '/../index.html', 'utf8').indexOf('moon3d-canvas') > 0 ? 1 : 0, 1, 0);
+}
+
+console.log('\nv21 观测家：小时级时刻 + 深空扩容 + 题库加餐：');
+{
+  // 冲日时刻细化：days 不再固定落在 .5（旧 1 天步进的产物），且土星 2026-10-04 冲日对齐真实历表
+  const dSat = (Date.UTC(2026, 9, 4) - J2000T) / 86400000;
+  const opp26 = findOppositions(dSat - 30, dSat + 30).filter(o => o.key === 'saturn');
+  check('2026-10 土星冲日存在', opp26.length, 1, 0);
+  if (opp26.length) {
+    console.log('   土星冲日细化时刻 UT ' + new Date(EPOCH_MS + opp26[0].days * 86400000).toISOString().slice(0, 16));
+    check('冲日时刻已细化（偏离旧 .5 粗值）', Math.abs(opp26[0].days % 1 - 0.5) > 0.01 ? 1 : 0, 1, 0);
+  }
+  // 大距细化：距角与历表一致（水星东大距 18~28°），时刻亚日
+  const elo = findElongations((Date.UTC(2026, 0, 1) - J2000T) / 86400000, (Date.UTC(2027, 0, 1) - J2000T) / 86400000);
+  const merc = elo.filter(e => e.key === 'mercury');
+  check('水星大距年 5+ 次', merc.length >= 5 ? 1 : 0, 1, 0);
+  check('大距距角在合理域', merc.every(e => e.deg > 15 && e.deg < 29) ? 1 : 0, 1, 0);
+  // 深空扩容 4→12：键名唯一、坐标合法
+  check('深空天体 12 个', DEEPSKY.length, 12, 0);
+  check('深空名唯一', new Set(DEEPSKY.map(d => d.n)).size === 12 ? 1 : 0, 1, 0);
+  check('深空赤经赤纬合法', DEEPSKY.every(d => d.ra >= 0 && d.ra < 24 && Math.abs(d.dec) <= 90) ? 1 : 0, 1, 0);
+  check('深空每条 3 冷知识', DEEPSKY.every(d => d.facts && d.facts.length === 3) ? 1 : 0, 1, 0);
+  // 题库加餐
+  check('题库扩至 18+', EXTRA_QUIZ.length >= 18 ? 1 : 0, 1, 0);
+  check('题目答案索引合法', EXTRA_QUIZ.every(q => q.answer >= 0 && q.answer < q.options.length) ? 1 : 0, 1, 0);
+  // 新 UI 挂载：拖拽 + 可观测性 + 小时显示
+  const m3 = fs.readFileSync(__dirname + '/../js/moon3d.js', 'utf8');
+  check('moon3d 含拖拽旋转', m3.indexOf('bindDrag') > 0 && m3.indexOf('pointerdown') > 0 ? 1 : 0, 1, 0);
+  const mp = fs.readFileSync(__dirname + '/../js/moonphase.js', 'utf8');
+  check('moonphase 导出 MOON_WINDOW', mp.indexOf('MOON_WINDOW') > 0 ? 1 : 0, 1, 0);
+  const cal = fs.readFileSync(__dirname + '/../js/calendar.js', 'utf8');
+  check('日历含可观测性判定', cal.indexOf('observabilityOf') > 0 && cal.indexOf('eclToHorizLocal') > 0 ? 1 : 0, 1, 0);
+  check('日历含小时显示', cal.indexOf('hmOf') > 0 ? 1 : 0, 1, 0);
+  // 日历自带地平换算的语义正确性：春分正午北京太阳高度 ≈ 50.1°（v8 天空面板同款锚点）
+  const mH = cal.match(/function eclToHorizLocal[\s\S]*?\n  \}/);
+  let horOk = false;
+  if (mH) {
+    try {
+      const sandbox = {};
+      // eslint-disable-next-line no-new-func
+      new Function('global', mH[0].replace('function eclToHorizLocal', 'global.eclToHorizLocal=function') + ';')(sandbox);
+      const days = (Date.UTC(2026, 2, 20, 4) - J2000T) / 86400000;
+      const h = sandbox.eclToHorizLocal(0, 0, days, { lat: 39.90, lon: 116.40 });
+      horOk = Math.abs(h - 50.1) < 1.5;
+      console.log('   春分正午北京太阳高度 ' + h.toFixed(1) + '°（期望 50.1°）');
+    } catch (e) { horOk = false; }
+  }
+  check('日历地平换算春分锚点', horOk ? 1 : 0, 1, 0);
 }
 
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');

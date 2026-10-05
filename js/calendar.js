@@ -18,6 +18,76 @@
     const dt = new Date(Date.UTC(2000, 0, 1, 12) + days * 86400000);
     return dt.getUTCFullYear() + '-' + String(dt.getUTCMonth() + 1).padStart(2, '0') + '-' + String(dt.getUTCDate()).padStart(2, '0');
   }
+  /* v21.0 时刻（世界时 UT，与日期列一致）；冲日/大距/月相事件附带小时 */
+  function hmOf(days) {
+    const dt = new Date(Date.UTC(2000, 0, 1, 12) + days * 86400000);
+    return String(dt.getUTCHours()).padStart(2, '0') + ':' + String(dt.getUTCMinutes()).padStart(2, '0');
+  }
+  /* v21.0 本地可观测性：读天空面板的观测点（solar_obs_v1），判事件时刻目标高度/太阳高度 */
+  const _calT = { x: 0, y: 0, z: 0 };
+  function obsOf() {
+    try {
+      const s = JSON.parse(localStorage.getItem('solar_obs_v1') || 'null');
+      if (s && isFinite(s.lat) && isFinite(s.lon)) return s;
+    } catch (e) { }
+    return { lat: 39.90, lon: 116.40, label: '北京' };
+  }
+  function eclToHorizLocal(lon, lat, days, ob) {
+    const D2R = Math.PI / 180, eps = 23.4393 * D2R;
+    const sinD = Math.sin(lat) * Math.cos(eps) + Math.cos(lat) * Math.sin(eps) * Math.sin(lon);
+    const dec = Math.asin(Math.max(-1, Math.min(1, sinD)));
+    const ra = Math.atan2(Math.sin(lon) * Math.cos(eps) - Math.tan(lat) * Math.sin(eps), Math.cos(lon));
+    let gmst = (280.46061837 + 360.98564736629 * days) % 360;
+    if (gmst < 0) gmst += 360;
+    let H = (gmst + ob.lon) * D2R - ra;
+    H = ((H % 6.2832) + 6.2832) % 6.2832; if (H > Math.PI) H -= 6.2832;
+    const phi = ob.lat * D2R;
+    const sinAlt = Math.sin(dec) * Math.sin(phi) + Math.cos(dec) * Math.cos(phi) * Math.cos(H);
+    return Math.asin(Math.max(-1, Math.min(1, sinAlt))) / D2R; // 高度角（度）
+  }
+  function sunEclLonOf(days) {
+    helioPos(PLANETS[2], days, _calT);
+    return Math.atan2(-_calT.y, -_calT.x);
+  }
+  function planetEclLonLat(key, days) {
+    const p = PLANETS.find(function (q) { return q.key === key; });
+    if (!p) return null;
+    helioPos(p, days, _calT);
+    const px = _calT.x, py = _calT.y, pz = _calT.z;
+    helioPos(PLANETS[2], days, _calT);
+    const gx = px - _calT.x, gy = py - _calT.y, gz = pz - _calT.z;
+    const r = Math.hypot(gx, gy, gz);
+    return { lon: Math.atan2(gy, gx), lat: Math.asin(gz / r) };
+  }
+  /* 返回 'ok' 本地可见 / 'day' 白天 / 'low' 地平线下 / null 无观测意义 */
+  function observabilityOf(o, days) {
+    const ob = obsOf();
+    let starEcl = null;
+    if (o.p.indexOf('star-') === 0) {
+      const s = BRIGHT_ECLIPTIC_STARS.find(function (q) { return o.p === 'star-' + q.key; });
+      if (!s) return null;
+      const R = Math.PI / 180;
+      starEcl = { lon: s.ecl[0] * R, lat: s.ecl[1] * R };
+    } else if (o.p === 'pleiades') {
+      const R = Math.PI / 180;
+      starEcl = { lon: 59.95 * R, lat: 4.06 * R };
+    } else {
+      starEcl = planetEclLonLat(o.p, days);
+    }
+    if (!starEcl) return null;
+    const altT = eclToHorizLocal(starEcl.lon, starEcl.lat, days, ob);
+    if (altT < 0) return 'low';
+    const altS = eclToHorizLocal(sunEclLonOf(days), 0, days, ob);
+    if (altS > -6) return 'day';
+    return 'ok';
+  }
+  /* v21.0 可见性徽标文案 */
+  function visNote(vis) {
+    if (vis === 'ok') return '👁 ' + t8('cal.visOk', '本地可见（观测点夜空地平线上）');
+    if (vis === 'day') return '☀️ ' + t8('cal.visDay', '事件时刻目标在地平线上，但为白天');
+    if (vis === 'low') return '🔽 ' + t8('cal.visLow', '事件时刻目标在观测点地平线下');
+    return '';
+  }
   function computedEvents() {
     if (oppCache) return oppCache;
     const now = nowDays();
@@ -26,8 +96,10 @@
     findOppositions(now - 400, now + 30 * 365.25).forEach(function (o) {
       out.push({
         d: dateStrOf(o.days), computed: true, key: o.key, days: o.days, icon: '🪐',
+        hm: hmOf(o.days),
         n: o.name, en: o.en,
-        t: t8('cal.oppDesc', '行星、地球与太阳排成一线，整夜可见、距离最近、视直径最大——肉眼+双筒即可观测。')
+        t: t8('cal.oppDesc', '行星、地球和太阳排成一线——整夜可见，距离最近、视面最大。') +
+          ' ' + t8('cal.ut', '时刻') + ' ' + hmOf(o.days) + ' UT'
       });
     });
     // 大距（内行星水/金，±3 年）
@@ -35,11 +107,13 @@
       const east = e.type === 'east';
       out.push({
         d: dateStrOf(e.days), computed: true, key: e.key, days: e.days, icon: east ? '🌆' : '🌅',
+        hm: hmOf(e.days),
         n: e.name + (east ? '东大距' : '西大距') + ' · ' + e.deg.toFixed(0) + '°',
         en: e.en + ' greatest ' + (east ? 'eastern' : 'western') + ' elongation · ' + e.deg.toFixed(0) + '°',
-        t: east
+        t: (east
           ? t8('cal.elongE', '太阳东侧距角最大——黄昏后在西方低空寻找，内行星最佳观测期。')
-          : t8('cal.elongW', '太阳西侧距角最大——黎明前在东方低空寻找，内行星最佳观测期。')
+          : t8('cal.elongW', '太阳西侧距角最大——黎明前在东方低空寻找，内行星最佳观测期。')) +
+          ' ' + t8('cal.ut', '时刻') + ' ' + hmOf(e.days) + ' UT'
       });
     });
     // 月相（未来 13 个月 + 近 1 月）
@@ -64,26 +138,28 @@
     });
     // v19 月掩星精确事件（<0.95° 视地区可见掩食；0.95~1.2° 为极近）
     findLunarOccultations(now - 100, now + 400).forEach(function (o) {
+      const vis = observabilityOf(o, o.days);
       out.push({
         d: dateStrOf(o.days), computed: true, key: o.p, days: o.days,
-        icon: o.occult ? '🌠' : '✨', conj: true,
+        icon: o.occult ? '🌠' : '✨', conj: true, vis: vis,
         n: (o.occult ? '月掩' : '月伴') + o.name + ' · ' + o.sepDeg.toFixed(2) + '°',
         en: (o.occult ? 'Lunar occultation of ' : 'Moon near ') + o.name + ' · ' + o.sepDeg.toFixed(2) + '°',
-        t: o.occult
+        t: (o.occult
           ? t8('cal.occultNow', '月掩级事件——部分观测地可见行星被月缘掩入/复现（月球视差因观测地而异）。小望远镜可见"掩始/复现"。')
-          : t8('cal.conjNear2', '极近相合——行星贴着月缘掠过，肉眼可见"星月相依"。')
+          : t8('cal.conjNear2', '极近相合——行星贴着月缘掠过，肉眼可见"星月相依"。')) + ' ' + visNote(vis)
       });
     });
     // v20 月掩亮星（黄道 ±7° 一等星/昴星团）
     findStarOccultations(now - 100, now + 400).forEach(function (o) {
+      const vis = observabilityOf(o, o.days);
       out.push({
         d: dateStrOf(o.days), computed: true, key: o.p, days: o.days,
-        icon: o.occult ? '🌟' : '✨', conj: true,
+        icon: o.occult ? '🌟' : '✨', conj: true, vis: vis,
         n: (o.occult ? '月掩' : '月伴') + o.name + ' · ' + o.sepDeg.toFixed(2) + '°',
         en: (o.occult ? 'Lunar occultation of ' : 'Moon near ') + o.en + ' · ' + o.sepDeg.toFixed(2) + '°',
-        t: o.occult
+        t: (o.occult
           ? t8('cal.occultStar', '月掩亮星——恒星被月缘掩入/复现，小望远镜可见"星点消失又重现"。' + o.con + '方向，' + o.mag.toFixed(1) + ' 等星。')
-          : t8('cal.nearStar', '月亮贴着这颗亮星掠过，肉眼即可见"星月相依"。')
+          : t8('cal.nearStar', '月亮贴着这颗亮星掠过，肉眼即可见"星月相依"。')) + ' ' + visNote(vis)
       });
     });
     // v17 月掩/极近行星 + 月掩昴星团——v19 findLunarOccultations 已覆盖此类事件，跳过避免重复
@@ -126,7 +202,7 @@
         const days = Math.round(x.dd - now);
         const when = days <= 0 ? t8('cal.today', '就在今天') : (en ? 'in ' + days + ' d' : days + ' 天后');
         return '<button class="alm-item" data-d="' + ev.d + '">' +
-          '<span class="alm-when">' + ev.d.slice(5) + '</span>' +
+          '<span class="alm-when">' + ev.d.slice(5) + (ev.hm ? ' ' + ev.hm : '') + '</span>' +
           '<span class="alm-name">' + (ev.icon || '') + ' ' + (en && ev.en ? ev.en : ev.n) + '</span>' +
           '<span class="alm-days">' + when + '</span></button>';
       }).join('') + '</div>';
@@ -143,9 +219,12 @@
       .map(function (ev) {
         const badge = ev.icon ? ev.icon + ' ' : (ev.cn ? '📜 ' : '');
         const fav = favs.indexOf(ev.d) >= 0;
+        const vis = ev.vis === 'ok' ? '<span class="ci-vis ok">👁</span>'
+          : ev.vis === 'day' ? '<span class="ci-vis day">☀️</span>'
+          : ev.vis === 'low' ? '<span class="ci-vis low">🔽</span>' : '';
         return '<button class="cal-item' + (ev.computed ? ' computed' : '') + (fav ? ' faved' : '') + '" data-d="' + ev.d + '">' +
-          '<span class="ci-date">' + badge + ev.d + '</span>' +
-          '<span class="ci-body"><span class="ci-name">' + (fav ? '★ ' : '') + (en && ev.en ? ev.en : ev.n) + '</span>' +
+          '<span class="ci-date">' + badge + ev.d + (ev.hm ? ' <b class="ci-hm">' + ev.hm + '</b>' : '') + '</span>' +
+          '<span class="ci-body"><span class="ci-name">' + (fav ? '★ ' : '') + (en && ev.en ? ev.en : ev.n) + ' ' + vis + '</span>' +
           '<span class="ci-desc">' + ev.t + '</span></span>' +
           '<span class="ci-star" data-d="' + ev.d + '" title="' + (fav ? t8('cal.unfav', '移出计划本') : t8('cal.fav', '加入计划本')) + '">' + (fav ? '★' : '☆') + '</span>' +
           '</button>';
