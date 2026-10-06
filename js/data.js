@@ -730,7 +730,7 @@ HELP_ITEMS.push(
  * ============================================================ */
 
 /* 数据版本号：solar-bodies.js 启动时校验，防止浏览器缓存的旧数据与新代码混搭 */
-if (typeof window !== "undefined") window.DATA_VERSION = 23;
+if (typeof window !== "undefined") window.DATA_VERSION = 24;
 
 /* 亮星座（s: 恒星 [赤经小时, 赤纬度]；l: 连线索引；b: 亮星中文名） */
 const CONSTELLATIONS = [
@@ -828,6 +828,32 @@ const METEOR_SHOWERS = [
  * 奎娄胃昴毕觜参（白虎）→ 井鬼柳星张翼轸（朱雀） */
 /* v19.0 月掩星精确时刻：0.05 天步进 + 视差模型
  * 地心分离 <0.95° 时地球上部分地区可见掩食（掩食带视分离而定） */
+/* v22.0 掩星抛光：粗扫候选 → 0.002 天（~3 分钟）步进找分离极小时刻，
+ * 并统计分离 <1° 的"极近窗口"持续分钟数 */
+const _occA = { x: 0, y: 0, z: 0 }, _occB = { x: 0, y: 0, z: 0 };
+function _occSepAt(t, earth, days) {
+  if (t.ecl) {
+    const R = Math.PI / 180;
+    const cl = Math.cos(t.ecl[1] * R);
+    _occA.x = cl * Math.cos(t.ecl[0] * R); _occA.y = cl * Math.sin(t.ecl[0] * R); _occA.z = Math.sin(t.ecl[1] * R);
+  } else {
+    const p = PLANETS.find(function (q) { return q.key === t.key; });
+    _geoUnitOf(p, earth, days, _occA);
+  }
+  _moonUnit(days, _occB);
+  return _sepDegOf(_occA, _occB);
+}
+function _occPolish(t, earth, roughDays) {
+  const lo = roughDays - 0.12, hi = roughDays + 0.12;
+  const dd = _refineMin(function (d) { return _occSepAt(t, earth, d); }, lo, hi);
+  const sep = _occSepAt(t, earth, dd);
+  let cnt = 0;
+  for (let w = dd - 0.15; w <= dd + 0.15; w += 0.002) {
+    if (_occSepAt(t, earth, w) < 1.0) cnt++;
+  }
+  return { days: dd, sepDeg: sep, winMin: Math.round(cnt * 0.002 * 1440) };
+}
+
 function findLunarOccultations(fromDays, toDays) {
   const targets = [
     { key: 'venus', name: '金星', en: 'Venus' },
@@ -858,7 +884,8 @@ function findLunarOccultations(fromDays, toDays) {
       if (sep < prev) { falling = true; }
       else if (sep > prev) {
         if (falling === true && prev < 1.2) {
-          out.push({ p: t.key, name: t.name, sepDeg: prev, occult: prev < 0.95, days: d - step });
+          const pl = _occPolish(t, earth, d - step);
+          out.push({ p: t.key, name: t.name, sepDeg: pl.sepDeg, occult: pl.sepDeg < 0.95, days: pl.days, winMin: pl.winMin });
           d += (t.key === 'pleiades' ? 3 : 10);
           prev = null; falling = null; continue;
         }
@@ -886,6 +913,7 @@ const BRIGHT_ECLIPTIC_STARS = [
 
 function findStarOccultations(fromDays, toDays) {
   const out = [];
+  const earth = PLANETS.find(function (p) { return p.key === 'earth'; });
   const R = Math.PI / 180;
   const a = { x: 0, y: 0, z: 0 }, bv = { x: 0, y: 0, z: 0 };
   BRIGHT_ECLIPTIC_STARS.forEach(function (s) {
@@ -901,9 +929,11 @@ function findStarOccultations(fromDays, toDays) {
       if (sep < prev) { falling = true; }
       else if (sep > prev) {
         if (falling === true && prev < 1.2) {
+          const st = { key: '_star', ecl: s.ecl };
+          const pl = _occPolish(st, earth, d - step);
           out.push({
             p: 'star-' + s.key, name: s.n, en: s.en, mag: s.mag, con: s.con,
-            sepDeg: prev, occult: prev < 0.95, days: d - step, star: true
+            sepDeg: pl.sepDeg, occult: pl.sepDeg < 0.95, days: pl.days, winMin: pl.winMin, star: true
           });
           d += 8; // 掩星后跳过尾随的近合
           prev = null; falling = null; continue;
@@ -1189,6 +1219,26 @@ TOURS.push(
     quiz: [
       { q: '行星冲日时，这颗行星？', options: ['整夜可见、距离最近', '只在黎明可见', '躲在太阳背后'], answer: 0, explain: '冲日=地球位于行星与太阳之间——日落即升，整夜可见。' },
       { q: '"大距"是观测哪类行星的最佳时机？', options: ['水星与金星', '土星', '火星'], answer: 0, explain: '内行星永远在太阳附近徘徊，大距时离太阳的视线距离最远。' }
+    ]
+  }
+);
+
+/* v22.0 月亮说明书：绕月飞行 + 3D 月相剧场联动实操课 */
+TOURS.push(
+  {
+    id: 'moonmanual', title: '月亮说明书', icon: '🌙',
+    desc: '绕着月球飞一圈：月海、天平动、月相与掩星', badge: { id: 'moonmanual', name: '月球专家', icon: '🌙' },
+    steps: [
+      { t: '登船：近月特写', text: '🌙 欢迎绕月飞行！月球半径 3475 km，只有地球的 27%——但它是夜空里除太阳外最亮的天体，也是唯一留下了人类脚印的世界。', cam: { key: 'moon', dist: 7 } },
+      { t: '月海不是海', text: '你看到的暗色斑块是"月海"——40 亿年前熔岩灌进巨型撞击盆地的玄武岩平原。静海、雨海、风暴洋……伽利略当年以为它们是水，名字却沿用至今。', cam: { key: 'moon', dist: 8 } },
+      { t: '月球也会"眨眼"', text: '月球总以同一面朝向地球，但会轻微"摇摆"——光学天平动。加上轨道倾斜，我们其实能看到约 59% 的月面，而不是正好一半。', cam: { key: 'moon', dist: 9 } },
+      { t: '为什么有月相', text: '🌙 打开月相望远镜——左窗是真 3D 月球，阳光方向由日月位置实时驱动。拨动日期，看 29.5 天一轮的明暗轮转；新月前后还能看到暗面泛着"地照"。', open: 'moon' },
+      { t: '月亮的"影子戏"', text: '📅 打开天文日历，找带 🌟 的日子——月掩亮星！月亮从恒星前面经过，小望远镜能看到星点消失又重现。日历还标了你的观测点能不能看到。', open: 'cal' }
+    ],
+    quiz: [
+      { q: '月海其实是？', options: ['玄武岩熔岩平原', '液态水海洋', '巨大陨石坑'], answer: 0, explain: '40 亿年前熔岩填满撞击盆地——伽利略误以为是水，名字沿用至今。' },
+      { q: '由于天平动，我们能看到的月面约是？', options: ['约 59%', '正好 50%', '100%'], answer: 0, explain: '月球轻微"摇摆"让边缘多露出约 9% 的背面。' },
+      { q: '"地照"是？', options: ['地球反射阳光照亮月暗面', '月面自己发光', '大气折射的阳光'], answer: 0, explain: '"新月抱旧月"——地球像小镜子把阳光反弹给月球暗面。' }
     ]
   }
 );

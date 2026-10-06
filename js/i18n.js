@@ -87,7 +87,7 @@ window.I18N = (function () {
       hzTemp: 'In habitable zone — liquid water possible', outTemp: 'Outside habitable zone',
       atmo: 'To be revealed by JWST'
     },
-    badges: { guide: 'Navigator', kepler: "Kepler's Apprentice", mercury: 'Mercury Explorer', seasons: 'Season Keeper', jupiter: 'Jupiter Watcher', halley: 'Comet Hunter', pluto: 'Frontier Pioneer', stargazing: 'First Light' },
+    badges: { guide: 'Navigator', kepler: "Kepler's Apprentice", mercury: 'Mercury Explorer', seasons: 'Season Keeper', jupiter: 'Jupiter Watcher', halley: 'Comet Hunter', pluto: 'Frontier Pioneer', stargazing: 'First Light', moonmanual: 'Moon Expert' },
     /* 天体卡（英文覆盖：name/type/desc/factN） */
     cards: {
       sun: { name: 'Sun', type: 'G-type main-sequence star', desc: 'The absolute ruler of the Solar System — a star that has burned for 4.6 billion years and holds 99.86% of its mass.', fact0: 'Every second the Sun fuses ~600 million tons of hydrogen into helium.', fact1: 'Sunlight takes 8 min 20 s to reach Earth — but a photon born in the core may take tens of thousands of years to escape.', fact2: '1.3 million Earths would fit inside the Sun.', fact3: 'The Sun is slowly brightening; in ~1 billion years Earth may become too hot for life.' },
@@ -274,6 +274,22 @@ window.I18N = (function () {
           { q: 'The Kuiper Belt lies at about…', options: ['2–4 AU', '8–12 AU', '30–50 AU'], answer: 2, explain: 'The icy realm beyond Neptune.' }
         ]
       },
+      moonmanual: {
+        title: 'Moon Manual', desc: 'An orbit around the Moon: maria, libration, phases & occultations',
+        badge: '🌙 Moon Expert',
+        steps: [
+          { t: 'Boarding: close lunar orbit', text: '🌙 Welcome to lunar orbit! The Moon is 3,475 km across — only 27% of Earth, yet the brightest object in the night sky after the Sun, and the only world humans have walked on.' },
+          { t: 'Maria are not seas', text: 'The dark patches are "maria" — basalt plains where lava flooded giant impact basins 4 billion years ago. Galileo mistook them for water; the names stuck.' },
+          { t: 'The Moon "blinks"', text: 'The Moon keeps one face to Earth, but sways slightly — optical libration. Tilt and sway together reveal about 59% of the surface, not exactly half.' },
+          { t: 'Why phases happen', text: '🌙 Open the Moon Telescope — the left window is a true 3D Moon whose sunlight direction is driven by the real Sun-Earth-Moon geometry. Drag the date for the 29.5-day cycle; near new moon, catch the earthshine.' },
+          { t: 'The Moon’s shadow play', text: '📅 Open the Astro Calendar and look for 🌟 events — lunar occultations! The Moon passes in front of a star; a small telescope catches it winking out. The calendar even shows whether it’s visible from your site.' }
+        ],
+        quiz: [
+          { q: 'Lunar maria are actually…', options: ['basalt lava plains', 'seas of liquid water', 'giant craters'], answer: 0, explain: 'Lava flooded impact basins 4 billion years ago — Galileo’s "seas" stuck as names.' },
+          { q: 'Thanks to libration we can see about…', options: ['59% of the Moon', 'exactly 50%', '100%'], answer: 0, explain: 'The slight sway exposes an extra ~9% around the edge.' },
+          { q: '“Earthshine” is…', options: ['sunlight bounced off Earth lighting the dark side', 'the Moon glowing on its own', 'airglow in our atmosphere'], answer: 0, explain: '“The old Moon in the new Moon’s arms” — Earth acts as a small mirror.' }
+        ]
+      },
       stargazing: {
         title: 'Stargazing 101', desc: 'From zero: what to see tonight and how',
         badge: '🔭 First Light',
@@ -335,7 +351,9 @@ window.I18N = (function () {
       ut: 'At',
       visOk: 'Visible locally (above your horizon at night)',
       visDay: 'Target above horizon but it is daytime',
-      visLow: 'Target below your horizon at event time'
+      visLow: 'Target below your horizon at event time',
+      win: 'separation <1° for ~',
+      winU: ' min'
     },
     moon: {
       title: '🌙 Moon Telescope', sub: 'The real phase at the simulated moment — 3D live-lit theatre, drag the date to watch it turn',

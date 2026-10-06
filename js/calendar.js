@@ -88,6 +88,11 @@
     if (vis === 'low') return '🔽 ' + t8('cal.visLow', '事件时刻目标在观测点地平线下');
     return '';
   }
+  /* v22.0 极近窗口文案 */
+  function winNote(winMin) {
+    if (!winMin || winMin <= 0) return '';
+    return '⏱ ' + t8('cal.win', '分离 <1° 窗口约 ') + winMin + t8('cal.winU', ' 分钟');
+  }
   function computedEvents() {
     if (oppCache) return oppCache;
     const now = nowDays();
@@ -141,12 +146,13 @@
       const vis = observabilityOf(o, o.days);
       out.push({
         d: dateStrOf(o.days), computed: true, key: o.p, days: o.days,
-        icon: o.occult ? '🌠' : '✨', conj: true, vis: vis,
+        icon: o.occult ? '🌠' : '✨', conj: true, vis: vis, hm: hmOf(o.days), winMin: o.winMin,
         n: (o.occult ? '月掩' : '月伴') + o.name + ' · ' + o.sepDeg.toFixed(2) + '°',
         en: (o.occult ? 'Lunar occultation of ' : 'Moon near ') + o.name + ' · ' + o.sepDeg.toFixed(2) + '°',
         t: (o.occult
           ? t8('cal.occultNow', '月掩级事件——部分观测地可见行星被月缘掩入/复现（月球视差因观测地而异）。小望远镜可见"掩始/复现"。')
-          : t8('cal.conjNear2', '极近相合——行星贴着月缘掠过，肉眼可见"星月相依"。')) + ' ' + visNote(vis)
+          : t8('cal.conjNear2', '极近相合——行星贴着月缘掠过，肉眼可见"星月相依"。')) +
+          ' ' + winNote(o.winMin) + ' ' + t8('cal.ut', '时刻') + ' ' + hmOf(o.days) + ' UT · ' + visNote(vis)
       });
     });
     // v20 月掩亮星（黄道 ±7° 一等星/昴星团）
@@ -154,12 +160,13 @@
       const vis = observabilityOf(o, o.days);
       out.push({
         d: dateStrOf(o.days), computed: true, key: o.p, days: o.days,
-        icon: o.occult ? '🌟' : '✨', conj: true, vis: vis,
+        icon: o.occult ? '🌟' : '✨', conj: true, vis: vis, hm: hmOf(o.days), winMin: o.winMin,
         n: (o.occult ? '月掩' : '月伴') + o.name + ' · ' + o.sepDeg.toFixed(2) + '°',
         en: (o.occult ? 'Lunar occultation of ' : 'Moon near ') + o.en + ' · ' + o.sepDeg.toFixed(2) + '°',
         t: (o.occult
           ? t8('cal.occultStar', '月掩亮星——恒星被月缘掩入/复现，小望远镜可见"星点消失又重现"。' + o.con + '方向，' + o.mag.toFixed(1) + ' 等星。')
-          : t8('cal.nearStar', '月亮贴着这颗亮星掠过，肉眼即可见"星月相依"。')) + ' ' + visNote(vis)
+          : t8('cal.nearStar', '月亮贴着这颗亮星掠过，肉眼即可见"星月相依"。')) +
+          ' ' + winNote(o.winMin) + ' ' + t8('cal.ut', '时刻') + ' ' + hmOf(o.days) + ' UT · ' + visNote(vis)
       });
     });
     // v17 月掩/极近行星 + 月掩昴星团——v19 findLunarOccultations 已覆盖此类事件，跳过避免重复
@@ -275,9 +282,10 @@
     box.innerHTML = '<div class="fav-title">📋 ' + t8('cal.myPlan', '我的观测计划本') + '</div>' +
       '<div class="fav-list">' + favs.sort().map(function (d) {
         const ev = all.find(function (x) { return x.d === d; });
+        const visIco = ev ? (ev.vis === 'ok' ? ' 👁' : ev.vis === 'day' ? ' ☀️' : ev.vis === 'low' ? ' 🔽' : '') : '';
         return '<button class="fav-item" data-d="' + d + '">' +
           '<span class="alm-when">' + d.slice(5) + '</span>' +
-          '<span class="alm-name">' + (ev ? (ev.icon || '') + ' ' + (en && ev.en ? ev.en : ev.n) : d) + '</span>' +
+          '<span class="alm-name">' + (ev ? (ev.icon || '') + ' ' + (en && ev.en ? ev.en : ev.n) + visIco : d) + '</span>' +
           '<span class="alm-days">★</span></button>';
       }).join('') + '</div>' +
       '<button id="btn-fav-export" style="width:100%; margin-top:6px;">📄 ' + t8('cal.favExport', '导出计划本 (TXT)') + '</button>';
@@ -322,16 +330,29 @@
 
   /* ---------- v11.0 C：ICS 导出（导入手机/电脑日历） ---------- */
   function toICSDate(dateStr) { return dateStr.replace(/-/g, ''); }
+  /* v22.0 有精确时刻的事件导出为定时（UTC），否则全天事件 */
+  function icsStartOf(ev) {
+    if (ev.days === undefined) return null;
+    const dt = new Date(Date.UTC(2000, 0, 1, 12) + ev.days * 86400000);
+    if (isNaN(dt.getTime())) return null;
+    return dt.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); // YYYYMMDDTHHMMSSZ
+  }
   function exportICS() {
     const evs = allEvents();
     const en = window.I18N && I18N.lang === 'en';
     let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//SolarGuide//CN\r\nCALSCALE:GREGORIAN\r\n';
     evs.forEach(function (ev, i) {
+      const st = icsStartOf(ev);
       ics += 'BEGIN:VEVENT\r\n' +
-        'UID:solar-guide-' + i + '-' + ev.d + '@local\r\n' +
-        'DTSTART;VALUE=DATE:' + toICSDate(ev.d) + '\r\n' +
-        'DTEND;VALUE=DATE:' + toICSDate(nextDay(ev.d)) + '\r\n' +
-        'SUMMARY:' + (en && ev.en ? ev.en : ev.n) + '\r\n' +
+        'UID:solar-guide-' + i + '-' + ev.d + '@local\r\n';
+      if (st) {
+        ics += 'DTSTART:' + st + '\r\n' +
+          'DTEND:' + icsStartOf({ days: ev.days + 1 / 24 }) + '\r\n';
+      } else {
+        ics += 'DTSTART;VALUE=DATE:' + toICSDate(ev.d) + '\r\n' +
+          'DTEND;VALUE=DATE:' + toICSDate(nextDay(ev.d)) + '\r\n';
+      }
+      ics += 'SUMMARY:' + (en && ev.en ? ev.en : ev.n) + '\r\n' +
         'DESCRIPTION:' + (ev.t || '').replace(/\r?\n/g, ' ') + '\r\n' +
         'END:VEVENT\r\n';
     });

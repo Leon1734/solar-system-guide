@@ -6,9 +6,9 @@ const vm = require('vm');
 const ctx = {};
 vm.createContext(ctx);
 const src = fs.readFileSync(__dirname + '/../js/data.js', 'utf8') +
-  "\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS, findOppositions: findOppositions, findElongations: findElongations, findMoonPhases: findMoonPhases, findPlanetConjunctions: findPlanetConjunctions, findMoonConjunctions: findMoonConjunctions, SAN_YUAN: SAN_YUAN, findMoonCloseApproaches: findMoonCloseApproaches, findStarOccultations: findStarOccultations, BRIGHT_ECLIPTIC_STARS: BRIGHT_ECLIPTIC_STARS };";
+  "\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS, findOppositions: findOppositions, findElongations: findElongations, findMoonPhases: findMoonPhases, findPlanetConjunctions: findPlanetConjunctions, findMoonConjunctions: findMoonConjunctions, SAN_YUAN: SAN_YUAN, findMoonCloseApproaches: findMoonCloseApproaches, findStarOccultations: findStarOccultations, findLunarOccultations: findLunarOccultations, BRIGHT_ECLIPTIC_STARS: BRIGHT_ECLIPTIC_STARS };";
 vm.runInContext(src, ctx);
-const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS, findOppositions, findElongations, findMoonPhases, findPlanetConjunctions, findMoonConjunctions, SAN_YUAN, findMoonCloseApproaches, findStarOccultations, BRIGHT_ECLIPTIC_STARS } = ctx.__x;
+const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS, findOppositions, findElongations, findMoonPhases, findPlanetConjunctions, findMoonConjunctions, SAN_YUAN, findMoonCloseApproaches, findStarOccultations, findLunarOccultations, BRIGHT_ECLIPTIC_STARS } = ctx.__x;
 
 const D2R = Math.PI / 180;
 const TAU = Math.PI * 2;
@@ -77,7 +77,7 @@ check('阋神星周期 [年]', eris.periodDays / 365.25, 559, 3);
 
 /* 课程数据完整性：7 课，每课有徽章/测验，测验答案索引合法 */
 console.log('\n漫游课程数据检查：');
-check('课程数量', TOURS.length, 8, 0);
+check('课程数量', TOURS.length, 9, 0);
 TOURS.forEach(t => {
   const ok = t.badge && t.quiz.length >= 2 &&
     t.quiz.every(q => q.answer >= 0 && q.answer < q.options.length) &&
@@ -658,6 +658,32 @@ console.log('\nv21 观测家：小时级时刻 + 深空扩容 + 题库加餐：'
     } catch (e) { horOk = false; }
   }
   check('日历地平换算春分锚点', horOk ? 1 : 0, 1, 0);
+}
+
+console.log('\nv22 月亮说明书 + 精确掩星：');
+{
+  // 新课：第 9 门、5 步、3 题、徽章配置齐全、i18n 覆盖
+  const mt = TOURS.find(t => t.id === 'moonmanual');
+  check('新课「月亮说明书」存在', mt ? 1 : 0, 1, 0);
+  check('新课 5 步 + 3 题', mt && mt.steps.length === 5 && mt.quiz.length === 3 ? 1 : 0, 1, 0);
+  check('新课徽章配置', mt && mt.badge && mt.badge.id === 'moonmanual' ? 1 : 0, 1, 0);
+  const i18nSrc = fs.readFileSync(__dirname + '/../js/i18n.js', 'utf8');
+  check('新课英文翻译齐全', i18nSrc.indexOf('moonmanual') > 0 && i18nSrc.indexOf('Moon Manual') > 0 ? 1 : 0, 1, 0);
+  check('新课面板联动', mt && mt.steps.some(s => s.open === 'moon') && mt.steps.some(s => s.open === 'cal') ? 1 : 0, 1, 0);
+  // 掩星抛光：事件带 winMin（合理域 30~480 分钟）、时刻亚小时
+  const n0 = (Date.UTC(2026, 9, 1, 12) - J2000T) / 86400000;
+  const occ = findStarOccultations(n0, n0 + 60).concat(findLunarOccultations(n0, n0 + 60));
+  // 分离 <1° 的事件必有持续窗口；全部窗口在扫描上限内
+  check('掩星事件含持续窗口', occ.length >= 1 && occ.every(e => e.winMin < 600) &&
+    occ.every(e => e.sepDeg < 1.0 ? e.winMin > 0 : e.winMin >= 0) ? 1 : 0, 1, 0);
+  // 抛光时刻应偏离 0.05 天步进栅格（粗扫产物）
+  const offGrid = occ.filter(e => Math.abs(e.days / 0.05 - Math.round(e.days / 0.05)) > 1e-6).length;
+  console.log('   抛光后偏离粗栅格事件 ' + offGrid + '/' + occ.length);
+  check('掩星时刻偏离粗栅格', offGrid >= Math.floor(occ.length / 2) ? 1 : 0, 1, 0);
+  // ICS 定时导出：calendar.js 含 icsStartOf
+  const cal = fs.readFileSync(__dirname + '/../js/calendar.js', 'utf8');
+  check('ICS 支持定时事件', cal.indexOf('icsStartOf') > 0 ? 1 : 0, 1, 0);
+  check('计划本含可见性徽标', cal.indexOf('visIco') > 0 ? 1 : 0, 1, 0);
 }
 
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');
