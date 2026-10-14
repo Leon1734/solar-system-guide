@@ -736,5 +736,14 @@ console.log('\nv24 入口简化 + 标记残留修复 + 首次引导：');
   check('下拉/折叠/引导样式', css.indexOf('#top-actions .dd-menu') > 0 && css.indexOf('#dock-adv') > 0 && css.indexOf('#onboard') > 0 ? 1 : 0, 1, 0);
 }
 
+console.log('v24.1 系统切换标签残留修复：');
+{
+  const mn = fs.readFileSync(__dirname + '/../js/solar-main.js', 'utf8');
+  check('updateLabels 隐藏非当前系统标签', mn.indexOf('hideStale') > 0 && mn.indexOf('bodies.forEach(hideStale)') > 0 && mn.indexOf('exoBodies.forEach(hideStale)') > 0 ? 1 : 0, 1, 0);
+  const ui = fs.readFileSync(__dirname + '/../js/solar-ui.js', 'utf8');
+  check('setSystem 立即刷新标签', ui.indexOf('SolarApp.tickOnce()') > 0 ? 1 : 0, 1, 0);
+  check('切换链路调试参数', mn.indexOf('syscycle') > 0 ? 1 : 0, 1, 0);
+}
+
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

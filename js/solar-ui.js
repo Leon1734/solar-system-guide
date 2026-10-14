@@ -427,6 +427,16 @@ function setSystem(key) {
   if (goingExo) buildExoSystem(key);
   state.sys = key;
   exoGroup.visible = goingExo;
+  /* v24.2 修：只显示当前系外系统——此前多次切换会叠加所有访问过的系统 */
+  exoActive = goingExo ? exoBodies.filter(function (b) { return b.sysKey === key; }) : [];
+  exoGroup.children.forEach(function (ch) { ch.visible = !goingExo || ch.userData.sysKey === key; });
+  setTrailVisible(!goingExo && state.showTrail); // v24.2 太阳系彗星拖尾不泄漏进系外视图
+  if (goingExo) { // v24.2 updateComet 仅在太阳系分支运行，切走时须显式隐藏彗尾/彗发
+    cometBodies.forEach(function (cb) {
+      if (cb.ionTail) { cb.ionTail.pts.visible = false; cb.dustTail.pts.visible = false; }
+      if (cb.coma) cb.coma.material.opacity = 0;
+    });
+  }
   bodies.forEach(function (b) {
     if (b.group && !b.isProbe) b.group.visible = !goingExo;
     if (b.orbitLine && !b.isProbe) { const mn = b.isMoonExtra || b.minor; b.orbitLine.visible = !goingExo && state.showOrbits && (!mn || state.minorOrbits); }
@@ -448,6 +458,7 @@ function setSystem(key) {
   renderChips();
   $('sys-select').value = key;
   const name = goingExo ? EXOSYSTEMS.find(function (s) { return s.key === key; }).name : t8('ui.solarSys', '太阳系');
+  if (window.SolarApp && SolarApp.tickOnce) SolarApp.tickOnce(); // v24.1 立即刷新标签，清除旧系统残留
   toast((goingExo ? '🚀 ' : '🏠 ') + t8('ui.sysSwitch', '已切换到：') + name);
 }
 $('sys-select').addEventListener('change', function () {

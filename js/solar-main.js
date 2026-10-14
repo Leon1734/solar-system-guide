@@ -9,7 +9,13 @@ const labelTmp = new THREE.Vector3();
 function updateLabels() {
   if (!state.showLabels) return;
   camera.getWorldPosition(camTmp);
-  activeList().forEach(function (b) {
+  /* v24.1 修：切换系统后旧系统标签残留——非当前系统的天体标签一律隐藏 */
+  const active = activeList();
+  const hideStale = function (b) { if (b.label && active.indexOf(b) < 0) b.label.style.display = 'none'; };
+  bodies.forEach(hideStale);
+  exoBodies.forEach(hideStale);
+  const placedLbl = []; // v24.2 标签防重叠：先到先得，选中/跟随目标强制显示
+  active.forEach(function (b) {
     b.group.getWorldPosition(labelTmp);
     if (b.isProbe && !state.showProbes) { b.label.style.display = 'none'; return; }
     let visible = true;
@@ -26,10 +32,23 @@ function updateLabels() {
       labelTmp.project(camera);
       visible = labelTmp.z < 1 && Math.abs(labelTmp.x) < 1.1 && Math.abs(labelTmp.y) < 1.1;
       if (visible) {
-        b.label.style.display = '';
-        b.label.style.left = ((labelTmp.x * 0.5 + 0.5) * window.innerWidth) + 'px';
-        b.label.style.top = ((-labelTmp.y * 0.5 + 0.5) * window.innerHeight) + 'px';
-        return;
+        const px = (labelTmp.x * 0.5 + 0.5) * window.innerWidth;
+        const py = (-labelTmp.y * 0.5 + 0.5) * window.innerHeight;
+        const isFocus = state.selected === b || state.follow === b;
+        if (!isFocus) {
+          const w = ((b.label.textContent || '').length * 7 + 14);
+          for (let i = 0; i < placedLbl.length; i++) {
+            const q = placedLbl[i];
+            if (Math.abs(px - q.x) < (w + q.w) * 0.36 && Math.abs(py - q.y) < 16) { visible = false; break; }
+          }
+        }
+        if (visible) {
+          placedLbl.push({ x: px, y: py, w: ((b.label.textContent || '').length * 7 + 14) });
+          b.label.style.display = '';
+          b.label.style.left = px + 'px';
+          b.label.style.top = py + 'px';
+          return;
+        }
       }
     }
     b.label.style.display = 'none';
@@ -350,6 +369,28 @@ const tourParam = applyUrlParams();
 const cosmosParam = parseInt(new URLSearchParams(location.search).get('cosmos') || '0', 10);
 if (cosmosParam >= 1) {
   setTimeout(function () { if (window.CosmosLab) CosmosLab.goLevel(Math.min(3, cosmosParam)); }, 2600);
+}
+if (new URLSearchParams(location.search).get('sysseq')) {
+  const seq2 = new URLSearchParams(location.search).get('sysseq').split(',');
+  let k2 = 0;
+  const step2 = function () {
+    if (k2 >= seq2.length) return;
+    setSystem(seq2[k2]);
+    k2++;
+    setTimeout(step2, 700);
+  };
+  setTimeout(step2, 3000);
+}
+if (new URLSearchParams(location.search).get('syscycle') === '1') {
+  const seq = ['trappist1', 'proxima', 'kepler452', 'kepler186', 'solar'];
+  let k = 0;
+  const step = function () {
+    if (k >= seq.length) return;
+    setSystem(seq[k]);
+    k++;
+    setTimeout(step, 700);
+  };
+  setTimeout(step, 3000);
 }
 if (new URLSearchParams(location.search).get('zen') === '1') {
   setTimeout(function () { document.body.classList.add('zen'); const z = document.getElementById('btn-zen'); if (z) z.textContent = '✕ 退出'; }, 1200);

@@ -331,4 +331,4 @@ const bodies = [];          // 太阳系天体（含太阳/行星/卫星/矮行�
 const pickMeshes = [];      // 当前可拾取网格（随系统切换重建）
 const labelsRoot = $('labels');
 const camTmp = new THREE.Vector3();
-function activeList() { return state.sys === 'solar' ? bodies : exoBodies; }
+function activeList() { return state.sys === 'solar' ? bodies : exoActive; } // v24.2 系外仅当前系统

@@ -682,6 +682,7 @@ const exoGroup = new THREE.Group();
 exoGroup.visible = false;
 scene.add(exoGroup);
 let exoBodies = [];
+let exoActive = []; // v24.2 当前系统的系外天体（切换时重建，避免多系统叠加）
 const exoBuilt = {};
 const EXO_STAR_KM = { trappist1: 84200, proxima: 107200, kepler452: 772600 }; // 星半径（太阳半径换算 km）
 
@@ -714,6 +715,8 @@ function buildExoSystem(key) {
   sGlow.scale.set(sys.starRadius * 6, sys.starRadius * 6, 1);
   sGroup.add(sGlow);
   star.group = sGroup; star.mesh = sMesh;
+  star.sysKey = key;
+  sGroup.userData.sysKey = key;
   star.label = makeLabel('⭐ ' + sys.starName);
   star.label.classList.add('label-sun');
   addPick(star, sGroup, sys.starRadius * 1.4);
@@ -723,6 +726,7 @@ function buildExoSystem(key) {
     new THREE.LineBasicMaterial({ visible: false })
   );
   sLine.visible = false;
+  sLine.userData.sysKey = key;
   exoGroup.add(sLine);
   star.orbitLine = sLine;
   exoGroup.add(sGroup);
@@ -758,6 +762,8 @@ function buildExoSystem(key) {
       group.add(halo);
     }
     body.group = group; body.mesh = mesh; body.visualR = r;
+    body.sysKey = key;
+    group.userData.sysKey = key;
     body.label = makeLabel(p.name);
     addPick(body, group, Math.max(r * 1.7, 1.2));
     makeHighlight(body, group, r);
@@ -772,6 +778,7 @@ function buildExoSystem(key) {
       new THREE.LineBasicMaterial({ color: p.color, transparent: true, opacity: 0.3, depthWrite: false })
     );
     orbit.visible = state.showOrbits;
+    orbit.userData.sysKey = key;
     exoGroup.add(orbit);
     body.orbitLine = orbit;
     exoGroup.add(group);
@@ -780,7 +787,7 @@ function buildExoSystem(key) {
 }
 
 function updateExo() {
-  exoBodies.forEach(function (b) {
+  exoActive.forEach(function (b) {
     if (b.isExoStar) {
       b.mesh.rotation.y = TAU * (state.simDays / 25) % TAU;
       return;
