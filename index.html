@@ -31,19 +31,29 @@
     <nav id="top-actions">
       <button id="btn-tours" class="hot" title="引导式漫游课程（推荐）">🎓 漫游课程</button>
       <button id="btn-cosmos" title="宇宙缩放之旅：继续拉远滚轮，从太阳系飞向整个宇宙">🌌 宇宙</button>
-      <button id="btn-badges" title="我的成就徽章">🏆 成就</button>
-      <button id="btn-transit" title="凌星法：系外行星是这样被发现的">🔭 凌星</button>
-      <button id="btn-gravity" title="引力弹弓实验室：不烧燃料的宇宙加速器">🚀 引力弹弓</button>
-      <button id="btn-meteors" title="流星雨沙盘：地球穿过彗星尘埃带">☄️ 流星雨</button>
-      <button id="btn-sky" title="今晚天空：按真实距角计算可见行星与方位">👁️ 今晚天空</button>
+      <div class="dd" id="dd-labs">
+        <button class="dd-btn" id="dd-labs-btn" title="今晚天空/凌星/引力弹弓/流星雨/日食/尺寸/对比/恒星一生">🔭 探索实验室 ▾</button>
+        <div class="dd-menu">
+        <button id="btn-sky" title="今晚天空：按真实距角计算可见行星与方位">👁️ 今晚天空</button>
+        <button id="btn-transit" title="凌星法：系外行星是这样被发现的">🔭 凌星</button>
+        <button id="btn-gravity" title="引力弹弓实验室：不烧燃料的宇宙加速器">🚀 引力弹弓</button>
+        <button id="btn-meteors" title="流星雨沙盘：地球穿过彗星尘埃带">☄️ 流星雨</button>
+        <button id="btn-eclipse" title="日食月食沙盘">🌑 日食</button>
+        <button id="btn-size" title="比较各天体真实大小">📐 尺寸</button>
+        <button id="btn-compare" title="行星数据对比">⚖️ 对比</button>
+        <button id="btn-starlife" title="观看太阳从星云到白矮星的一生">🌟 恒星一生</button>
+        </div>
+      </div>
+      <div class="dd" id="dd-more">
+        <button class="dd-btn" id="dd-more-btn" title="成就徽章/每日一题/科普角">📚 更多 ▾</button>
+        <div class="dd-menu">
+        <button id="btn-badges" title="我的成就徽章">🏆 成就</button>
+        <button id="btn-quiz" title="每日一题：随机天文问答，积分累计">🎲 每日一题</button>
+        <button id="btn-science" title="开普勒定律与天文小知识">📖 科普</button>
+        </div>
+      </div>
       <button id="btn-moon" title="月相望远镜：当前真实月相与月面地名">🌙 月相</button>
       <button id="btn-cal" title="天文日历：30+ 关键天象一键跳转回放">📅 日历</button>
-      <button id="btn-quiz" title="每日一题：随机天文问答，积分累计">🎲 每日一题</button>
-      <button id="btn-starlife" title="观看太阳从星云到白矮星的一生">🌟 恒星一生</button>
-      <button id="btn-compare" title="行星数据对比">⚖️ 对比</button>
-      <button id="btn-eclipse" title="日食月食沙盘">🌑 日食</button>
-      <button id="btn-size" title="比较各天体真实大小">📐 尺寸</button>
-      <button id="btn-science" title="开普勒定律与天文小知识">📖 科普</button>
       <button id="btn-lang" title="切换语言 / Language">EN</button>
       <button id="btn-install" class="hidden" title="安装为应用（可离线使用）">⬇️ 安装应用</button>
       <button id="btn-help" title="操作说明">❓</button>
@@ -95,26 +105,24 @@
         <span id="speed-readout">—</span>
       </div>
       <label class="toggle"><input type="checkbox" id="tg-orbits" checked><span id="tg-orbits-lbl">轨道</span></label>
-      <label class="toggle"><input type="checkbox" id="tg-minor" title="矮行星/彗星/卫星/探测器轨道（关闭=精简观感）"><span id="tg-minor-lbl">细轨</span></label>
       <label class="toggle"><input type="checkbox" id="tg-labels" checked><span id="tg-labels-lbl">标签</span></label>
       <label class="toggle"><input type="checkbox" id="tg-belt" checked><span id="tg-belt-lbl">环带</span></label>
       <label class="toggle"><input type="checkbox" id="tg-bloom" checked><span id="tg-bloom-lbl">辉光</span></label>
-      <label class="toggle" title="联网加载 NASA 真实贴图（地球/月球/火星）"><input type="checkbox" id="tg-realtex"><span id="tg-realtex-lbl">真实贴图</span></label>
-      <button id="btn-mode" title="切换行星距离比例">距离：压缩（观赏）</button>
-      <button id="btn-bg" title="切换宇宙背景颜色">🌌 深空黑</button>
-      <button id="btn-hz" title="显示宜居带（绿色区域=允许液态水）">🟢 宜居带</button>
       <button id="btn-trail" class="active" title="行星近段运动轨迹拖尾">✨ 轨迹</button>
-      <button id="btn-axis" title="高倾角行星的自转轴虚线（金星倒转/天王星躺转）">📏 自转轴</button>
-      <button id="btn-const" title="星座连线与黄道圈">⭐ 星座</button>
-      <button id="btn-timeline" title="时间轴：±100 年拖拽漫游">⏳ 时间轴</button>
-      <button id="btn-probe" title="显示/隐藏人类探测器的历史足迹">🛰️ 探测器</button>
+      <button id="btn-dock-adv" title="展开/收起高级显示与工具">⚙ 高级 ▾</button>
       <select id="sys-select" title="切换行星系统"></select>
-      <button id="btn-phase" title="以地球视角观察选中天体的圆缺">🌓 相位</button>
-      <button id="btn-project" title="隐藏界面，适合教室投影">🎬 投影</button>
-      <button id="btn-share" title="生成可分享的当前场景链接">🔗 分享此刻</button>
-      <button id="btn-shot" title="快照当前画面为图片">📸 快照</button>
-      <button id="btn-dim" title="UI 全暗，沉浸观星（再点恢复）">🌙 关灯</button>
-      <button id="btn-sfx" title="程序化音效（氛围底噪+交互音）">🔇 静音</button>
+    </div>
+  </div>
+
+  <!-- v24.0 首次引导 -->
+  <div id="onboard" class="hidden">
+    <div class="ob-card">
+      <h3 id="ob-h">👋 第一次来？三步上手</h3>
+      <p id="ob-p">1️⃣ 拖拽旋转视角 · 滚轮拉近拉远<br>2️⃣ 🎓 漫游课程：9 节引导课带你玩懂太阳系<br>3️⃣ 🌌 宇宙：滚轮拉到最远，飞向银河系与整个宇宙</p>
+      <div class="ob-btns">
+        <button id="ob-tour" class="hot">▶ 开始漫游课程</button>
+        <button id="ob-close">自己逛逛</button>
+      </div>
     </div>
   </div>
 
@@ -130,6 +138,23 @@
       <div class="tw-bar"><div id="tour-wait-bar"></div></div>
     </div>
     <div id="tour-quiz" class="hidden"></div>
+      <div id="dock-adv" class="hidden">
+        <label class="toggle"><input type="checkbox" id="tg-minor" title="矮行星/彗星/卫星/探测器轨道（关闭=精简观感）"><span id="tg-minor-lbl">细轨</span></label>
+        <label class="toggle" title="联网加载 NASA 真实贴图（地球/月球/火星）"><input type="checkbox" id="tg-realtex"><span id="tg-realtex-lbl">真实贴图</span></label>
+        <button id="btn-mode" title="切换行星距离比例">距离：压缩（观赏）</button>
+        <button id="btn-bg" title="切换宇宙背景颜色">🌌 深空黑</button>
+        <button id="btn-hz" title="显示宜居带（绿色区域=允许液态水）">🟢 宜居带</button>
+        <button id="btn-axis" title="高倾角行星的自转轴虚线（金星倒转/天王星躺转）">📏 自转轴</button>
+        <button id="btn-const" title="星座连线与黄道圈">⭐ 星座</button>
+        <button id="btn-timeline" title="时间轴：±100 年拖拽漫游">⏳ 时间轴</button>
+        <button id="btn-probe" title="显示/隐藏人类探测器的历史足迹">🛰️ 探测器</button>
+        <button id="btn-phase" title="以地球视角观察选中天体的圆缺">🌓 相位</button>
+        <button id="btn-project" title="隐藏界面，适合教室投影">🎬 投影</button>
+        <button id="btn-share" title="生成可分享的当前场景链接">🔗 分享此刻</button>
+        <button id="btn-shot" title="快照当前画面为图片">📸 快照</button>
+        <button id="btn-dim" title="UI 全暗，沉浸观星（再点恢复）">🌙 关灯</button>
+        <button id="btn-sfx" title="程序化音效（氛围底噪+交互音）">🔇 静音</button>
+      </div>
     <div id="tour-progress-area">
       <div id="tour-step-count">1 / 1</div>
       <div id="tour-dots"></div>
@@ -425,37 +450,37 @@
   <div id="error-banner" class="hidden"></div>
 
   <!-- 库与程序（defer：先让加载屏绘制，再执行重量级初始化；defer 保持执行顺序） -->
-  <script defer src="js/lib/three.min.js?v=25"></script>
-  <script defer src="js/lib/OrbitControls.js?v=25"></script>
-  <script defer src="js/lib/postprocessing/CopyShader.js?v=25"></script>
-  <script defer src="js/lib/postprocessing/LuminosityHighPassShader.js?v=25"></script>
-  <script defer src="js/lib/postprocessing/EffectComposer.js?v=25"></script>
-  <script defer src="js/lib/postprocessing/MaskPass.js?v=25"></script>
-  <script defer src="js/lib/postprocessing/ShaderPass.js?v=25"></script>
-  <script defer src="js/lib/postprocessing/RenderPass.js?v=25"></script>
-  <script defer src="js/lib/postprocessing/UnrealBloomPass.js?v=25"></script>
-  <script defer src="js/data.js?v=25"></script>
-  <script defer src="js/i18n.js?v=25"></script>
-  <script defer src="js/textures.js?v=25"></script>
-  <script defer src="js/solar-core.js?v=25"></script>
-  <script defer src="js/solar-bodies.js?v=25"></script>
-  <script defer src="js/solar-ui.js?v=25"></script>
-  <script defer src="js/solar-main.js?v=25"></script>
-  <script defer src="js/tours.js?v=25"></script>
-  <script defer src="js/tools.js?v=25"></script>
-  <script defer src="js/starlife.js?v=25"></script>
-  <script defer src="js/transit.js?v=25"></script>
-  <script defer src="js/gravity.js?v=25"></script>
-  <script defer src="js/meteors.js?v=25"></script>
-  <script defer src="js/sky.js?v=25"></script>
-  <script defer src="js/gamepad.js?v=25"></script>
-  <script defer src="js/constellation.js?v=25"></script>
-  <script defer src="js/moonphase.js?v=25"></script>
-  <script defer src="js/moon3d.js?v=25"></script>
-  <script defer src="js/cosmos.js?v=25"></script>
-  <script defer src="js/calendar.js?v=25"></script>
-  <script defer src="js/quizdaily.js?v=25"></script>
-  <script defer src="js/sfx.js?v=25"></script>
-  <script defer src="js/boot.js?v=25"></script>
+  <script defer src="js/lib/three.min.js?v=26"></script>
+  <script defer src="js/lib/OrbitControls.js?v=26"></script>
+  <script defer src="js/lib/postprocessing/CopyShader.js?v=26"></script>
+  <script defer src="js/lib/postprocessing/LuminosityHighPassShader.js?v=26"></script>
+  <script defer src="js/lib/postprocessing/EffectComposer.js?v=26"></script>
+  <script defer src="js/lib/postprocessing/MaskPass.js?v=26"></script>
+  <script defer src="js/lib/postprocessing/ShaderPass.js?v=26"></script>
+  <script defer src="js/lib/postprocessing/RenderPass.js?v=26"></script>
+  <script defer src="js/lib/postprocessing/UnrealBloomPass.js?v=26"></script>
+  <script defer src="js/data.js?v=26"></script>
+  <script defer src="js/i18n.js?v=26"></script>
+  <script defer src="js/textures.js?v=26"></script>
+  <script defer src="js/solar-core.js?v=26"></script>
+  <script defer src="js/solar-bodies.js?v=26"></script>
+  <script defer src="js/solar-ui.js?v=26"></script>
+  <script defer src="js/solar-main.js?v=26"></script>
+  <script defer src="js/tours.js?v=26"></script>
+  <script defer src="js/tools.js?v=26"></script>
+  <script defer src="js/starlife.js?v=26"></script>
+  <script defer src="js/transit.js?v=26"></script>
+  <script defer src="js/gravity.js?v=26"></script>
+  <script defer src="js/meteors.js?v=26"></script>
+  <script defer src="js/sky.js?v=26"></script>
+  <script defer src="js/gamepad.js?v=26"></script>
+  <script defer src="js/constellation.js?v=26"></script>
+  <script defer src="js/moonphase.js?v=26"></script>
+  <script defer src="js/moon3d.js?v=26"></script>
+  <script defer src="js/cosmos.js?v=26"></script>
+  <script defer src="js/calendar.js?v=26"></script>
+  <script defer src="js/quizdaily.js?v=26"></script>
+  <script defer src="js/sfx.js?v=26"></script>
+  <script defer src="js/boot.js?v=26"></script>
 </body>
 </html>

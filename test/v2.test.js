@@ -714,5 +714,27 @@ console.log('\nv23 宇宙之旅 + 沉浸模式 + 线条降噪：');
   check('偏好记忆 minor/zen', ui2.indexOf('minorOrbits: state.minorOrbits') > 0 ? 1 : 0, 1, 0);
 }
 
+
+console.log('\nv24 入口简化 + 标记残留修复 + 首次引导：');
+{
+  const cs = fs.readFileSync(__dirname + '/../js/cosmos.js', 'utf8');
+  check('cosmos 切级清场 hideAllLabels', cs.indexOf('function hideAllLabels') > 0 && (cs.match(/hideAllLabels\(\)/g) || []).length >= 3 ? 1 : 0, 1, 0);
+  check('cosmos 进入守卫太阳系', cs.indexOf('state.sys !== \'solar\'') > 0 ? 1 : 0, 1, 0);
+  const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
+  check('顶栏双下拉分组', html.indexOf('dd-labs') > 0 && html.indexOf('dd-more') > 0 ? 1 : 0, 1, 0);
+  check('实验室按钮收入下拉', html.indexOf('btn-sky') > html.indexOf('dd-labs') && html.indexOf('btn-starlife') > html.indexOf('dd-labs') ? 1 : 0, 1, 0);
+  check('更多按钮收入下拉', html.indexOf('btn-quiz') > html.indexOf('dd-more') ? 1 : 0, 1, 0);
+  check('底栏高级折叠区', html.indexOf('dock-adv') > 0 && html.indexOf('btn-probe') > html.indexOf('dock-adv') && html.indexOf('btn-sfx') > html.indexOf('dock-adv') ? 1 : 0, 1, 0);
+  check('首次引导卡', html.indexOf('id="onboard"') > 0 && html.indexOf('ob-tour') > 0 ? 1 : 0, 1, 0);
+  const ui = fs.readFileSync(__dirname + '/../js/solar-ui.js', 'utf8');
+  check('下拉开关与 ESC 关闭', ui.indexOf('closeAllDD') > 0 && ui.indexOf('.dd.open') > 0 ? 1 : 0, 1, 0);
+  check('底栏折叠交互', ui.indexOf('btn-dock-adv') > 0 ? 1 : 0, 1, 0);
+  check('引导仅一次记忆', ui.indexOf('solar_onboard_v1') > 0 ? 1 : 0, 1, 0);
+  const mn = fs.readFileSync(__dirname + '/../js/solar-main.js', 'utf8');
+  check('加载屏彻底移除', mn.indexOf('classList.add(\'gone\')') > 0 ? 1 : 0, 1, 0);
+  const css = fs.readFileSync(__dirname + '/../css/style.css', 'utf8');
+  check('下拉/折叠/引导样式', css.indexOf('#top-actions .dd-menu') > 0 && css.indexOf('#dock-adv') > 0 && css.indexOf('#onboard') > 0 ? 1 : 0, 1, 0);
+}
+
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

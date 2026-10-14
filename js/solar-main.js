@@ -364,5 +364,5 @@ if (tourParam) {
 // 隐藏加载屏（后台标签中 rAF 不触发，用定时器确保收尾）
 setTimeout(function () {
   const ls = document.getElementById('loading-screen');
-  if (ls) ls.classList.add('done');
+  if (ls) { ls.classList.add('done'); setTimeout(function () { ls.classList.add('gone'); }, 900); }
 }, 600);

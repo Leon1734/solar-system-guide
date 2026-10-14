@@ -718,6 +718,47 @@ function setProject(on) {
 $('btn-project').addEventListener('click', function () { setProject(!state.project); });
 $('btn-exit-project').addEventListener('click', function () { setProject(false); });
 
+/* ================= v24.0 下拉分组 / 底栏折叠 / 首次引导 ================= */
+function closeAllDD() {
+  document.querySelectorAll('.dd.open').forEach(function (o) { o.classList.remove('open'); });
+}
+document.querySelectorAll('.dd').forEach(function (dd) {
+  const btn = dd.querySelector('.dd-btn');
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    const wasOpen = dd.classList.contains('open');
+    closeAllDD();
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', closeAllDD);
+$('btn-dock-adv').addEventListener('click', function () {
+  const box = $('dock-adv');
+  const open = !box.classList.contains('hidden');
+  if (open) box.classList.add('hidden'); else box.classList.remove('hidden');
+  this.textContent = open ? '⚙ 高级 ▾' : '⚙ 高级 ▴';
+  this.classList.toggle('active', !open);
+});
+/* 首次引导：仅一次，截图/分享链接不打扰 */
+(function () {
+  let seen = false;
+  try { seen = localStorage.getItem('solar_onboard_v1') === '1'; } catch (e) { }
+  const ob = $('onboard');
+  if (!ob) return;
+  const done = function () {
+    try { localStorage.setItem('solar_onboard_v1', '1'); } catch (e) { }
+    ob.classList.add('hidden');
+  };
+  $('ob-close').addEventListener('click', done);
+  $('ob-tour').addEventListener('click', function () {
+    done();
+    if (window.TourEngine) TourEngine.start('overview');
+  });
+  if (seen) return;
+  if (location.search.indexOf('tour=') >= 0 || location.search.indexOf('freeze=') >= 0) return;
+  setTimeout(function () { ob.classList.remove('hidden'); }, 2200);
+})();
+
 /* ================= 键盘 ================= */
 window.addEventListener('keydown', function (e) {
   if (e.target && e.target.tagName === 'INPUT' && e.target.type !== 'checkbox' && e.target.type !== 'range') return;
@@ -728,6 +769,7 @@ window.addEventListener('keydown', function (e) {
   } else if (e.key === 'Escape') {
     const openModal = MODALS.some(function (id) { return !$(id).classList.contains('hidden'); });
     if (openModal) { closeAllModals(); return; }
+    if (document.querySelector('.dd.open')) { closeAllDD(); return; }
     if (window.TourEngine && TourEngine.active()) { TourEngine.exit(); return; }
     if (window.CosmosLab && CosmosLab.isCosmic()) { CosmosLab.exit(); return; }
     if (state.zen) { setZen(false); return; }

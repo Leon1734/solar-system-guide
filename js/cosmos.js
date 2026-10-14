@@ -166,7 +166,7 @@ window.CosmosLab = (function () {
     if (on) {
       badgeBox.innerHTML = '<b>' + TITLES[level][0] + '</b><span>' + TITLES[level][1] + '</span>';
     }
-    if (!on && cardBox) cardBox.classList.add('hidden');
+    if (!on) hideAllLabels();
     labelsRoot.style.display = on ? 'none' : '';
   }
   function hideLabelsTemp() { labelsRoot.style.display = 'none'; }
@@ -283,6 +283,14 @@ window.CosmosLab = (function () {
     cardBox.querySelector('.cc-close').addEventListener('click', function () { cardBox.classList.add('hidden'); });
   }
 
+  /* v24.0 清场：切换级别/回太阳系时隐藏全部标记标签与科普卡（修残留） */
+  function hideAllLabels() {
+    markerSets.forEach(function (set) {
+      set.forEach(function (sp) { if (sp.userData.el) sp.userData.el.style.display = 'none'; });
+    });
+    if (cardBox) cardBox.classList.add('hidden');
+  }
+
   /* ---------- 级别切换 ---------- */
   function anchorFor(n) {
     if (n === 1) return { tgt: [0, Y1, 0], pos: [0, Y1 + 150, 430] };
@@ -293,6 +301,7 @@ window.CosmosLab = (function () {
   function goLevel(n) {
     if (busy || n === level || n < 0 || n > 3) return;
     ensureUI(); build();
+    hideAllLabels();
     busy = true;
     fadeBox.style.display = '';
     void fadeBox.offsetWidth; // 强制 reflow 保证过渡生效
@@ -320,7 +329,10 @@ window.CosmosLab = (function () {
       if (n > 0) toast(TITLES[n][0]);
     }, 170);
   }
-  function enter() { goLevel(1); }
+  function enter() {
+    if (state.sys !== 'solar') { toast(t8('cosmos.noExo', '请先切回太阳系再开启宇宙之旅')); return; }
+    goLevel(1);
+  }
   function exit() { goLevel(0); }
 
   /* ---------- 交互：滚轮升降级 + 点击标记 ---------- */
