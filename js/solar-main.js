@@ -353,6 +353,11 @@ function renderFrame(dt) {
   if (state.bloom && composer) composer.render(dt || 0.016);
   else renderer.render(scene, camera);
   for (let i = 0; i < afterHooks.length; i++) afterHooks[i](dt);
+  if (window.__camdbg) {
+    document.title = 'CAM ' + camera.position.x.toFixed(0) + ',' + camera.position.y.toFixed(0) + ',' + camera.position.z.toFixed(0) +
+      ' TGT ' + controls.target.x.toFixed(0) + ',' + controls.target.y.toFixed(0) + ',' + controls.target.z.toFixed(0) +
+      ' TWEEN ' + (tween ? (tween.body ? 'body' : 'pos') : 'none');
+  }
 }
 
 window.addEventListener('resize', function () {
@@ -366,6 +371,7 @@ window.addEventListener('resize', function () {
 loadPrefs();
 setSpeed(state.speed);
 const tourParam = applyUrlParams();
+if (new URLSearchParams(location.search).get('camdbg') === '1') window.__camdbg = true;
 const cosmosParam = parseInt(new URLSearchParams(location.search).get('cosmos') || '0', 10);
 if (cosmosParam >= 1) {
   setTimeout(function () { if (window.CosmosLab) CosmosLab.goLevel(Math.min(3, cosmosParam)); }, 2600);

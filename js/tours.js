@@ -129,7 +129,7 @@ var TourEngine = (function () {
           if (state.constMode !== 'west') { tourRestoreConst = state.constMode; StarMap.setMode('west'); }
           const p = StarMap.dskyPos(s.cam.dsky);
           if (p) {
-            const R2 = 48000, d2 = s.cam.dist || 2600;
+            const R2 = 48000, d2 = s.cam.dist || 200; // 停点距天体：标记 scale~10，200 视角约 3° 清晰可见
             const q = p.clone().multiplyScalar(Math.max(0.5, 1 - d2 / R2));
             A().gotoOrigin([q.x, q.y, q.z], s.cam.dur || 2.8);
           }
