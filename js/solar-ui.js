@@ -130,6 +130,27 @@ function renderInfoPanel(body) {
   $('info-rows').innerHTML = rows;
   $('info-facts').innerHTML = '<h3>' + t8('info.facts', '🔍 你知道吗') + '</h3><ul>' +
     d.facts.map(function (f, i) { return '<li>' + L('fact' + i, f) + '</li>'; }).join('') + '</ul>';
+  // v26.0 卫星家族：可直达选中/跟随的卫星清单（月球 + 伽利略卫星 + 土卫六）
+  const fam = [];
+  if (d.key === 'earth') { const mb = findByKey('moon'); if (mb) fam.push(mb); }
+  MOONS_EXTRA.forEach(function (m) { if (m.parent === d.key) { const mb = findByKey(m.key); if (mb) fam.push(mb); } });
+  const oldFam = document.getElementById('moon-family');
+  if (oldFam) oldFam.remove();
+  if (fam.length) {
+    const div = document.createElement('div');
+    div.id = 'moon-family';
+    div.innerHTML = '<h3>' + t8('info.moonFamily', '🛰️ 卫星家族 · 点击直达') + '</h3><div class="mf-row">' +
+      fam.map(function (b) { return '<button class="mf-btn" data-k="' + b.data.key + '">' + b.data.name.split('（')[0] + '</button>'; }).join('') + '</div>';
+    const facts = $('info-facts');
+    facts.parentNode.insertBefore(div, facts);
+    div.querySelectorAll('.mf-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const mb = findByKey(this.dataset.k);
+        if (mb) selectBody(mb, { follow: true });
+      });
+    });
+  }
+
   // B3: 公转进度环（行星/矮行星）
   const progRow = document.getElementById('row-progress');
   if (progRow) progRow.remove();

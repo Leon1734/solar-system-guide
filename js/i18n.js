@@ -380,6 +380,9 @@ window.I18N = (function () {
       visDay: 'Target above horizon but it is daytime',
       visLow: 'Target below your horizon at event time',
       win: 'separation <1° for ~',
+      paIn: 'Ingress point', dur: 'occultation ~', durU: ' min near the centerline',
+      icsVis: 'local-visible events only',
+      moonFamily: '🛰️ Moon family · click to visit',
       winU: ' min'
     },
     moon: {

@@ -766,5 +766,25 @@ console.log('v25 主导开发轮：深空课 + 导航 + 修复：');
   check('EN 宇宙/新课覆盖', ii.indexOf('cosmos: {') > 0 && ii.indexOf('dskytravel: {') > 0 ? 1 : 0, 1, 0);
 }
 
+console.log('v26 卫星家族 + 掩星方位角/时长 + ICS 过滤：');
+{
+  const ev = findStarOccultations((Date.UTC(2026, 9, 1, 12) - J2000T) / 86400000, (Date.UTC(2026, 9, 1, 12) - J2000T) / 86400000 + 45);
+  const occ = ev.filter(function (e) { return e.occult; });
+  check('掩星事件带 PA 字段', occ.every(function (e) { return isFinite(e.pa) && e.pa >= 0 && e.pa < 360; }) ? 1 : 0, 1, 0);
+  check('地心真掩带掩食时长（20~120 分钟）', occ.every(function (e) { return e.sepDeg < 0.259 ? (e.durMin >= 20 && e.durMin <= 120) : e.durMin === 0; }) ? 1 : 0, 1, 0);
+  console.log('   轩辕十四掩食时长量级：' + (occ.find(function (e) { return e.name.indexOf('轩辕') >= 0; }) || { durMin: -1 }).durMin + ' 分钟');
+  const ui = fs.readFileSync(__dirname + '/../js/solar-ui.js', 'utf8');
+  check('档案卡卫星家族区块', ui.indexOf('moon-family') > 0 && ui.indexOf('mf-btn') > 0 ? 1 : 0, 1, 0);
+  const cal = fs.readFileSync(__dirname + '/../js/calendar.js', 'utf8');
+  check('日历掩食细节文案', cal.indexOf('occDetail') > 0 && cal.indexOf('paDir') > 0 ? 1 : 0, 1, 0);
+  check('ICS 本地可见过滤', cal.indexOf('onlyVisible') > 0 ? 1 : 0, 1, 0);
+  const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
+  check('可见事件导出按钮', html.indexOf('btn-ics-vis') > 0 ? 1 : 0, 1, 0);
+  const css = fs.readFileSync(__dirname + '/../css/style.css', 'utf8');
+  check('卫星家族按钮样式', css.indexOf('.mf-btn') > 0 ? 1 : 0, 1, 0);
+  const ii = fs.readFileSync(__dirname + '/../js/i18n.js', 'utf8');
+  check('EN 掩食细节键', ii.indexOf('paIn:') > 0 ? 1 : 0, 1, 0);
+}
+
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

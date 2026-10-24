@@ -88,6 +88,18 @@
     if (vis === 'low') return '🔽 ' + t8('cal.visLow', '事件时刻目标在观测点地平线下');
     return '';
   }
+  /* v26.0 掩食细节：掩入点方位 + 中心线掩食时长（仅地心真掩 sep<0.259°） */
+  function paDir(pa) {
+    const zh = ['北', '东北', '东', '东南', '南', '西南', '西', '西北'];
+    const en = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    return ((window.I18N && I18N.lang === 'en') ? en : zh)[Math.round(pa / 45) % 8];
+  }
+  function occDetail(o) {
+    if (!o.occult || !o.durMin) return '';
+    return '🧭 ' + t8('cal.paIn', '掩入点') + ' ' + paDir(o.pa) + '（PA ' + Math.round(o.pa) + '°）· ' +
+      t8('cal.dur', '中心线附近掩食约 ') + o.durMin + t8('cal.durU', ' 分钟');
+  }
+
   /* v22.0 极近窗口文案 */
   function winNote(winMin) {
     if (!winMin || winMin <= 0) return '';
@@ -166,7 +178,7 @@
         t: (o.occult
           ? t8('cal.occultStar', '月掩亮星——恒星被月缘掩入/复现，小望远镜可见"星点消失又重现"。' + o.con + '方向，' + o.mag.toFixed(1) + ' 等星。')
           : t8('cal.nearStar', '月亮贴着这颗亮星掠过，肉眼即可见"星月相依"。')) +
-          ' ' + winNote(o.winMin) + ' ' + t8('cal.ut', '时刻') + ' ' + hmOf(o.days) + ' UT · ' + visNote(vis)
+          ' ' + winNote(o.winMin) + ' ' + occDetail(o) + ' ' + t8('cal.ut', '时刻') + ' ' + hmOf(o.days) + ' UT · ' + visNote(vis)
       });
     });
     // v17 月掩/极近行星 + 月掩昴星团——v19 findLunarOccultations 已覆盖此类事件，跳过避免重复
@@ -337,8 +349,11 @@
     if (isNaN(dt.getTime())) return null;
     return dt.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); // YYYYMMDDTHHMMSSZ
   }
-  function exportICS() {
-    const evs = allEvents();
+  function exportICS(onlyVisible) {
+    const evs = allEvents().filter(function (ev) {
+      if (!onlyVisible) return true;            // v26.0 可选：跳过本地不可见（白天/地平线下）的计算事件
+      return ev.vis === undefined || ev.vis === 'ok';
+    });
     const en = window.I18N && I18N.lang === 'en';
     let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//SolarGuide//CN\r\nCALSCALE:GREGORIAN\r\n';
     evs.forEach(function (ev, i) {
@@ -362,7 +377,8 @@
     a.download = 'solar-guide-events.ics';
     a.click();
     URL.revokeObjectURL(a.href);
-    toast(t8('cal.icsOk', '📅 日历文件已导出——可导入手机/电脑日历应用'));
+    toast(t8('cal.icsOk', '📅 日历文件已导出——可导入手机/电脑日历应用') +
+      (onlyVisible ? ' · ' + t8('cal.icsVis', '仅本地可见事件') + ' ' + evs.length + ' 条' : ''));
   }
   function nextDay(d) {
     const t = Date.parse(d + 'T12:00:00Z') + 86400000;
@@ -450,7 +466,9 @@
     initCalendar();
     buildTimeline();
     $('btn-timeline').addEventListener('click', function () { toggleTimeline(); });
-    $('btn-ics').addEventListener('click', exportICS);
+    $('btn-ics').addEventListener('click', function () { exportICS(false); });
+    var iv = $('btn-ics-vis');
+    if (iv) iv.addEventListener('click', function () { exportICS(true); });
     $('btn-fav').addEventListener('click', function () {
       $('cal-fav').classList.toggle('hidden');
     });

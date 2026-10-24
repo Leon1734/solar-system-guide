@@ -734,7 +734,7 @@ HELP_ITEMS.push(
  * ============================================================ */
 
 /* 数据版本号：solar-bodies.js 启动时校验，防止浏览器缓存的旧数据与新代码混搭 */
-if (typeof window !== "undefined") window.DATA_VERSION = 28;
+if (typeof window !== "undefined") window.DATA_VERSION = 29;
 
 /* 亮星座（s: 恒星 [赤经小时, 赤纬度]；l: 连线索引；b: 亮星中文名） */
 const CONSTELLATIONS = [
@@ -858,6 +858,48 @@ function _occPolish(t, earth, roughDays) {
   return { days: dd, sepDeg: sep, winMin: Math.round(cnt * 0.002 * 1440) };
 }
 
+/* v26.0 掩食方位角与时长（矢量法，科普级）：
+ * 横向角速度 = 月球相对目标 0.04 天走过的角距离；
+ * 掩入点 = 月缘沿运动方向前侧接触点（黄道坐标局部东北基） */
+function _occVec(t, earth, days, out) {
+  _occSepAt(t, earth, days);
+  out.mx = _occB.x; out.my = _occB.y; out.mz = _occB.z;
+  out.ax = _occA.x; out.ay = _occA.y; out.az = _occA.z;
+}
+const _occV1 = { mx: 0, my: 0, mz: 0, ax: 0, ay: 0, az: 0 }, _occV2 = { mx: 0, my: 0, mz: 0, ax: 0, ay: 0, az: 0 };
+function _occPA(t, earth, days) {
+  const dt = 0.02, R = Math.PI / 180, rMoon = 0.259 * R;
+  _occVec(t, earth, days, _occV1);
+  _occVec(t, earth, days + dt, _occV2);
+  const wx = _occV1.ax - _occV1.mx, wy = _occV1.ay - _occV1.my, wz = _occV1.az - _occV1.mz;
+  const sAng = Math.sqrt(wx * wx + wy * wy + wz * wz);
+  const mvx = _occV2.mx - _occV1.mx, mvy = _occV2.my - _occV1.my, mvz = _occV2.mz - _occV1.mz;
+  const vLen = Math.sqrt(mvx * mvx + mvy * mvy + mvz * mvz);
+  if (vLen < 1e-12) return { pa: 0, durMin: 0 };
+  const omega = vLen / dt; // rad/day（相对横向角速度）
+  let durMin = 0;
+  if (sAng < rMoon) {
+    const chord = 2 * Math.sqrt(rMoon * rMoon - sAng * sAng);
+    durMin = chord / omega * 1440; // rad ÷ (rad/day) → 分钟
+  }
+  // 月心局部基：东（+λ）、北（+β）
+  const ml = Math.sqrt(_occV1.mx * _occV1.mx + _occV1.my * _occV1.my);
+  const ex = -_occV1.my / ml, ey = _occV1.mx / ml, ez = 0;
+  const nx = -_occV1.mz * _occV1.mx / ml, ny = -_occV1.mz * _occV1.my / ml, nz = ml;
+  // 掩入点：月心 + (-半弦长·v̂ + s·n̂)（v̂=月运动方向，n̂=目标所在侧）
+  const vx = mvx / vLen, vy = mvy / vLen, vz = mvz / vLen;
+  const wn = wx * vx + wy * vy + wz * vz;
+  let ux = wx - vnSafe(wn) * vx, uy = wy - vnSafe(wn) * vy, uz = wz - vnSafe(wn) * vz;
+  const ul = Math.sqrt(ux * ux + uy * uy + uz * uz) || 1;
+  ux /= ul; uy /= ul; uz /= ul;
+  const half = Math.sqrt(Math.max(0, rMoon * rMoon - sAng * sAng));
+  const px = -half * vx + sAng * ux, py = -half * vy + sAng * uy, pz = -half * vz + sAng * uz;
+  let pa = Math.atan2(px * ex + py * ey + pz * ez, px * nx + py * ny + pz * nz) / R;
+  pa = (pa + 360) % 360;
+  return { pa: pa, durMin: durMin };
+}
+function vnSafe(v) { return isFinite(v) ? v : 0; }
+
 function findLunarOccultations(fromDays, toDays) {
   const targets = [
     { key: 'venus', name: '金星', en: 'Venus' },
@@ -889,7 +931,8 @@ function findLunarOccultations(fromDays, toDays) {
       else if (sep > prev) {
         if (falling === true && prev < 1.2) {
           const pl = _occPolish(t, earth, d - step);
-          out.push({ p: t.key, name: t.name, sepDeg: pl.sepDeg, occult: pl.sepDeg < 0.95, days: pl.days, winMin: pl.winMin });
+          const pa2 = pl.sepDeg < 0.95 ? _occPA(t, earth, pl.days) : { pa: 0, durMin: 0 };
+          out.push({ p: t.key, name: t.name, sepDeg: pl.sepDeg, occult: pl.sepDeg < 0.95, days: pl.days, winMin: pl.winMin, pa: pa2.pa, durMin: Math.round(pa2.durMin) });
           d += (t.key === 'pleiades' ? 3 : 10);
           prev = null; falling = null; continue;
         }
@@ -935,9 +978,11 @@ function findStarOccultations(fromDays, toDays) {
         if (falling === true && prev < 1.2) {
           const st = { key: '_star', ecl: s.ecl };
           const pl = _occPolish(st, earth, d - step);
+          const pa2 = pl.sepDeg < 0.95 ? _occPA(st, earth, pl.days) : { pa: 0, durMin: 0 };
           out.push({
             p: 'star-' + s.key, name: s.n, en: s.en, mag: s.mag, con: s.con,
-            sepDeg: pl.sepDeg, occult: pl.sepDeg < 0.95, days: pl.days, winMin: pl.winMin, star: true
+            sepDeg: pl.sepDeg, occult: pl.sepDeg < 0.95, days: pl.days, winMin: pl.winMin, star: true,
+            pa: pa2.pa, durMin: Math.round(pa2.durMin)
           });
           d += 8; // 掩星后跳过尾随的近合
           prev = null; falling = null; continue;
