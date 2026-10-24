@@ -89,7 +89,7 @@ window.I18N = (function () {
       hzTemp: 'In habitable zone — liquid water possible', outTemp: 'Outside habitable zone',
       atmo: 'To be revealed by JWST'
     },
-    badges: { guide: 'Navigator', kepler: "Kepler's Apprentice", mercury: 'Mercury Explorer', seasons: 'Season Keeper', jupiter: 'Jupiter Watcher', halley: 'Comet Hunter', pluto: 'Frontier Pioneer', stargazing: 'First Light', moonmanual: 'Moon Expert' },
+    badges: { dsky: '🌌 Deep-Sky Traveler', guide: 'Navigator', kepler: "Kepler's Apprentice", mercury: 'Mercury Explorer', seasons: 'Season Keeper', jupiter: 'Jupiter Watcher', halley: 'Comet Hunter', pluto: 'Frontier Pioneer', stargazing: 'First Light', moonmanual: 'Moon Expert' },
     /* 天体卡（英文覆盖：name/type/desc/factN） */
     cards: {
       sun: { name: 'Sun', type: 'G-type main-sequence star', desc: 'The absolute ruler of the Solar System — a star that has burned for 4.6 billion years and holds 99.86% of its mass.', fact0: 'Every second the Sun fuses ~600 million tons of hydrogen into helium.', fact1: 'Sunlight takes 8 min 20 s to reach Earth — but a photon born in the core may take tens of thousands of years to escape.', fact2: '1.3 million Earths would fit inside the Sun.', fact3: 'The Sun is slowly brightening; in ~1 billion years Earth may become too hot for life.' },
@@ -105,7 +105,12 @@ window.I18N = (function () {
       ceres: { name: 'Ceres', type: 'Dwarf planet (Main Belt)', desc: 'The first asteroid ever found (1801) and the largest body of the Main Belt.', fact0: 'Planet → asteroid → dwarf planet: a “triple jump” in classification.', fact1: 'Dawn (2015) imaged bright salt deposits in Occator crater — traces of brine from below.', fact2: 'Ceres may hold abundant water ice — a future “fuel stop” for deep space.' },
       eris: { name: 'Eris', type: 'Dwarf planet (Scattered Disc)', desc: 'The 2005 discovery that triggered the planet-definition debate.', fact0: 'Heavier than Pluto, it was called “the tenth planet” — a year later Pluto was reclassified, Eris too.', fact1: 'Named after the Greek goddess of discord — fittingly.', fact2: 'Highly tilted, eccentric orbit: aphelion 97.5 AU; one orbit takes 558 years.' },
       apophis: { name: 'Apophis', type: 'Near-Earth asteroid', desc: 'The most famous near-Earth asteroid: on 13 Apr 2029 it will pass ~31,000 km above Earth — below satellite orbits, visible to the naked eye.', fact0: 'In 2004 it briefly held the highest Torino impact probability (~2.7%); later observations ruled out 2029, 2036 and 2068.', fact1: 'During the 2029 flyby it will brighten from magnitude ~15 to 3 in one night.', fact2: "Earth's tides will visibly spin the asteroid up — a prediction to verify in 2029.", fact3: 'Named after Apep, the Egyptian serpent of chaos that nightly attacks the Sun.' },
-      moon: { name: 'Moon', type: "Earth's natural satellite", desc: 'Tidally locked — the same face always points at Earth.', fact0: 'Rotation = orbit (27.3 days): the far side is never seen from Earth.', fact1: 'It recedes 3.8 cm per year — dinosaurs saw a bigger Moon.', fact2: 'The only world humans have walked on: 12 moonwalkers so far.' },
+      cosmos: {
+      back: '↩ Back to the Solar System',
+      noExo: 'Switch back to the Solar System first',
+      enter: '🌌 Zoom out — keep scrolling to fly to the galaxy'
+    },
+    moon: { name: 'Moon', type: "Earth's natural satellite", desc: 'Tidally locked — the same face always points at Earth.', fact0: 'Rotation = orbit (27.3 days): the far side is never seen from Earth.', fact1: 'It recedes 3.8 cm per year — dinosaurs saw a bigger Moon.', fact2: 'The only world humans have walked on: 12 moonwalkers so far.' },
       io: { name: 'Io', type: 'Galilean moon', desc: 'The most volcanic body in the Solar System, kneaded by Jupiter’s tides.', fact0: '400+ active volcanoes; sulfur paints its pizza-like surface.', fact1: 'Tidal heating keeps its interior molten — tides at their most powerful.' },
       europa: { name: 'Europa', type: 'Galilean moon', desc: 'An ice shell hiding an ocean that may hold more water than all of Earth’s.', fact0: 'Brown cracks mark breaks in the ice where salty water rose.', fact1: 'A prime target in the search for life — Europa Clipper is on its way.' },
       ganymede: { name: 'Ganymede', type: 'Galilean moon', desc: 'The largest moon in the Solar System — bigger than Mercury, with its own magnetic field.', fact0: 'Galileo spotted it in 1610 — our first sight of worlds beyond Earth.', fact1: 'Its subsurface ocean may hold more water than Earth’s.' },
@@ -160,6 +165,10 @@ window.I18N = (function () {
       ['👁️ Tonight’s Sky', 'Real-elongation forecast: which planets are visible and where'],
       ['☄️ Comet family', 'Encke, 67P and Hale-Bopp included — set the date to each perihelion to grow the tails'],
       ['🎮 Gamepad', 'Left stick orbit · right stick zoom · A follow · B deselect · Start pause'],
+      ['🌌 Zoom-out journey', 'Scroll to the farthest: Solar System → Milky Way (you are here) → Local Group → observable universe; tap the dots to jump levels'],
+      ['🌿 Zen mode', 'Hide every control, keep time & play; Esc exits'],
+      ['🔭 Explore & Labs / 📚 More', 'Dropdown menus tuck away the low-frequency panels: transit, gravity, meteors, eclipse, compare…'],
+      ['⚙ Advanced', 'Bottom-dock fold-out: fine orbits, real textures, constellations, timeline, probes, projector, share, snapshot…'],
       ['⏱ Auto-play', 'In a tour, ⏱ advances automatically when the narration ends (or every 8 s)']
     ],
     science: {
@@ -274,6 +283,22 @@ window.I18N = (function () {
         quiz: [
           { q: 'Pluto was demoted mainly because…', options: ['it is too small', 'it has not cleared its orbital zone', 'it is too far'], answer: 1, explain: 'One of the three planet criteria is clearing the neighbourhood.' },
           { q: 'The Kuiper Belt lies at about…', options: ['2–4 AU', '8–12 AU', '30–50 AU'], answer: 2, explain: 'The icy realm beyond Neptune.' }
+        ]
+      },
+      dskytravel: {
+        title: 'Deep-Sky Traveler', desc: 'Leave the planets: visit clusters, nebulae and a galaxy',
+        badge: '🌌 Deep-Sky Traveler',
+        steps: [
+          { t: 'Departure: the Pleiades', text: '🌌 We leave the planets behind — first stop the Pleiades in Taurus: about 1,000 newborn stars wrapped in blue haze, the naked-eye “Seven Sisters” 444 light-years away. (Western constellations unfolded for you)' },
+          { t: 'A stellar nursery: Orion Nebula', text: '1,350 light-years away, hundreds of new stars are igniting inside a giant molecular cloud — every pink pixel is hydrogen lit by ultraviolet light. Our Sun was born in a cradle just like this.' },
+          { t: 'Island universe: Andromeda', text: '2.5 million light-years out, the combined glow of hundreds of billions of stars forms a faint spindle — the farthest thing your eye can see. It is approaching at 110 km/s and will merge with the Milky Way in ~4.5 billion years.' },
+          { t: 'A retirement home: M13', text: 'Over 300,000 stars older than the Sun packed into a silver sphere — globular clusters are galactic fossils, nearly 12 billion years old. In 1974 we sent the first interstellar hello here.' },
+          { t: 'Final stop: a star’s funeral', text: 'The “guest star” recorded by Song-dynasty astronomers in 1054 — the remnant of an exploded star, now an 11-light-year shell hiding a lighthouse spinning 30 times a second. Class dismissed — deep space is now under your feet.' }
+        ],
+        quiz: [
+          { q: 'The Pleiades’ nickname “Seven Sisters” refers to…', options: ['seven naked-eye bright stars', 'seven planets', 'seven supernovae'], answer: 0, explain: 'Keen eyes count 6–10 — mythologies worldwide landed on “seven”.' },
+          { q: 'Andromeda’s future relative to us?', options: ['merging in ~4.5 billion years', 'fleeing forever', 'already collided'], answer: 0, explain: 'It approaches at 110 km/s — the merger will form “Milkomeda”.' },
+          { q: 'The Crab Nebula is the wreckage of…', options: ['the 1054 supernova', 'a comet', 'an occultation'], answer: 0, explain: 'Song records: “a guest star visible even in daylight” — a pulsar remains at its heart.' }
         ]
       },
       moonmanual: {

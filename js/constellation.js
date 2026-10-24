@@ -373,7 +373,14 @@ window.StarMap = (function () {
     setMode(state.constMode || 'off');
   }
 
-  return { toggle: toggle, setMode: setMode, update: update, highlight: highlight, refreshLang: refreshLang, showMyth: showMyth, showDeepSky: showDeepSky, showMansion: showMansion };
+  /* v25.0 深空天体场景坐标（供漫游课程运镜） */
+  function dskyPos(key) {
+    const d = DEEPSKY.find(function (q) { return q.key === key || dKey(q) === key; });
+    if (!d) return null;
+    return raDecToScene(d.ra, d.dec, new THREE.Vector3());
+  }
+  function dKey(d) { return (d.e || '').split('·')[0].trim().toLowerCase(); }
+  return { toggle: toggle, setMode: setMode, update: update, highlight: highlight, refreshLang: refreshLang, showMyth: showMyth, showDeepSky: showDeepSky, showMansion: showMansion, dskyPos: dskyPos };
 })();
 
 /* 自注册：SolarApp 就绪后接入渲染后钩子与语言刷新 */

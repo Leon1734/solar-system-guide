@@ -421,6 +421,7 @@ $('btn-close-info').addEventListener('click', function () {
 /* ================= 系统切换（v4.0 A2） ================= */
 function setSystem(key) {
   if (state.sys === key) return;
+  if (window.CosmosLab && CosmosLab.isCosmic()) CosmosLab.hardReset(); // v25.0 切系统先退宇宙
   if (window.TourEngine && TourEngine.active()) TourEngine.exit();
   selectBody(null);
   const goingExo = key !== 'solar';

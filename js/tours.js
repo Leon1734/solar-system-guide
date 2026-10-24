@@ -10,6 +10,7 @@ var TourEngine = (function () {
   let quizIdx = 0, quizScore = 0, quizMode = false;
   let speakOn = false;
   let autoPlay = false, autoTimer = null; // v5.0 自动播放
+  let tourRestoreConst = null; // v25.0 课程前星座模式（深空课自动开西式星座，退出恢复）
   try { speakOn = localStorage.getItem('solar_tour_sound') === '1'; } catch (e) { }
 
   const BADGE_KEY = 'solar_badges_v2';
@@ -123,6 +124,17 @@ var TourEngine = (function () {
     if (s.cam) {
       if (s.cam.origin) A().gotoOrigin(s.cam.pos || [0, 150, 280]);
       else if (s.cam.key) A().goto(s.cam.key, s.cam.dist, s.cam.dur || 2.4);
+      else if (s.cam.dsky) { // v25.0 深空天体运镜：自动开星座层，相机停在天体外 dist 处
+        if (window.StarMap && window.ConstellationOk !== false) {
+          if (state.constMode !== 'west') { tourRestoreConst = state.constMode; StarMap.setMode('west'); }
+          const p = StarMap.dskyPos(s.cam.dsky);
+          if (p) {
+            const R2 = 48000, d2 = s.cam.dist || 2600;
+            const q = p.clone().multiplyScalar(Math.max(0.5, 1 - d2 / R2));
+            A().gotoOrigin([q.x, q.y, q.z], s.cam.dur || 2.8);
+          }
+        }
+      }
     }
     if (s.pulse) A().pulse(s.pulse);
     if (typeof s.waitDays === 'number' && s.waitDays > 0) {
@@ -238,6 +250,7 @@ var TourEngine = (function () {
     $('tour-text').classList.remove('hidden');
     $('tour-progress-area').classList.remove('hidden');
     hideCard();
+    if (tourRestoreConst !== null && window.StarMap) { StarMap.setMode(tourRestoreConst); tourRestoreConst = null; }
     A().setSpeed(20);
     A().setTickerPaused(false);
     renderTourMenu();

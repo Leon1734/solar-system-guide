@@ -141,6 +141,17 @@ window.CosmosLab = (function () {
     badgeBox.id = 'cosmos-badge';
     badgeBox.style.display = 'none';
     document.body.appendChild(badgeBox);
+    const dots = document.createElement('div');
+    dots.id = 'cosmos-dots';
+    ['☀️', '🌌', '🔗', '🕸'].forEach(function (ic, i) {
+      const d = document.createElement('button');
+      d.className = 'cdot';
+      d.textContent = ic;
+      d.title = ['太阳系', '银河系', '本星系群', '可观测宇宙'][i];
+      d.addEventListener('click', function () { goLevel(i); });
+      dots.appendChild(d);
+    });
+    document.body.appendChild(dots);
     const back = document.createElement('button');
     back.id = 'cosmos-back';
     back.style.display = 'none';
@@ -161,13 +172,19 @@ window.CosmosLab = (function () {
     if (!badgeBox) return;
     const on = level > 0;
     badgeBox.style.display = on ? '' : 'none';
+    const dots = $('cosmos-dots');
+    dots.style.display = (on || $('cosmos-dots').__seen) ? '' : 'none';
+    dots.__seen = dots.__seen || on;
+    Array.prototype.forEach.call(dots.children, function (d2, i) {
+      d2.classList.toggle('cur', i === level);
+    });
     $('cosmos-back').style.display = on ? '' : 'none';
     $('cosmos-back').textContent = '↩ ' + t8('cosmos.back', '回到太阳系');
     if (on) {
       badgeBox.innerHTML = '<b>' + TITLES[level][0] + '</b><span>' + TITLES[level][1] + '</span>';
     }
     if (!on) hideAllLabels();
-    labelsRoot.style.display = on ? 'none' : '';
+    labelsRoot.style.display = (on || !state.showLabels) ? 'none' : ''; // v25.0 尊重标签开关
   }
   function hideLabelsTemp() { labelsRoot.style.display = 'none'; }
 
@@ -333,6 +350,13 @@ window.CosmosLab = (function () {
     if (state.sys !== 'solar') { toast(t8('cosmos.noExo', '请先切回太阳系再开启宇宙之旅')); return; }
     goLevel(1);
   }
+  /* v25.0 硬复位：行星系统切换时同步调用，不恢复相机（相机归 setSystem 管） */
+  function hardReset() {
+    if (level === 0) return;
+    level = 0; busy = false;
+    groups.forEach(function (g) { g.visible = false; });
+    if (window.__cosmosReady) { hideAllLabels(); updateChrome(); }
+  }
   function exit() { goLevel(0); }
 
   /* ---------- 交互：滚轮升降级 + 点击标记 ---------- */
@@ -401,5 +425,5 @@ window.CosmosLab = (function () {
   // 延迟自举（SolarApp 在 solar-main 才定义）
   setTimeout(function () { if (window.SolarApp) init(); }, 1200);
 
-  return { enter: enter, exit: exit, goLevel: goLevel, isCosmic: function () { return level > 0; }, level: function () { return level; } };
+  return { enter: enter, exit: exit, goLevel: goLevel, hardReset: hardReset, isCosmic: function () { return level > 0; }, level: function () { return level; } };
 })();

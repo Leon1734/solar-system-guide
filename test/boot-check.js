@@ -9,7 +9,7 @@ const ROOT = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const DYNAMIC = new Set([
   'quiz-finish', 'tour-wait-bar', 'row-progress', 'row-live', 'row-dist', 'btn-fav-export',
-  'cosmos-labels', 'cosmos-fade', 'cosmos-badge', 'cosmos-back', 'cosmos-card'
+  'cosmos-labels', 'cosmos-fade', 'cosmos-badge', 'cosmos-back', 'cosmos-card', 'cosmos-dots'
 ]);
 const SKIP_FILES = new Set(['boot.js', 'data.js', 'textures.js', 'sfx.js']);
 

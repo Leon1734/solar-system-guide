@@ -6,9 +6,9 @@ const vm = require('vm');
 const ctx = {};
 vm.createContext(ctx);
 const src = fs.readFileSync(__dirname + '/../js/data.js', 'utf8') +
-  "\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS, findOppositions: findOppositions, findElongations: findElongations, findMoonPhases: findMoonPhases, findPlanetConjunctions: findPlanetConjunctions, findMoonConjunctions: findMoonConjunctions, SAN_YUAN: SAN_YUAN, findMoonCloseApproaches: findMoonCloseApproaches, findStarOccultations: findStarOccultations, findLunarOccultations: findLunarOccultations, BRIGHT_ECLIPTIC_STARS: BRIGHT_ECLIPTIC_STARS };";
+  "\n;this.__x = { PLANETS: PLANETS, DWARFS: DWARFS, HALLEY: COMET_HALLEY, TOURS: TOURS, PROBES: PROBES, STAR_LIFE: STAR_LIFE, EXOSYSTEMS: EXOSYSTEMS, COMETS_EXTRA: COMETS_EXTRA, CONSTELLATIONS: CONSTELLATIONS, ASTRO_EVENTS: ASTRO_EVENTS, EXTRA_QUIZ: EXTRA_QUIZ, ZODIAC_SIGNS: ZODIAC_SIGNS, MOON_FEATURES: MOON_FEATURES, CONSTELLATION_MYTHS: CONSTELLATION_MYTHS, METEOR_SHOWERS: METEOR_SHOWERS, DEEPSKY: DEEPSKY, OBSERVATORIES: OBSERVATORIES, CONST_MANSIONS: CONST_MANSIONS, findOppositions: findOppositions, findElongations: findElongations, findMoonPhases: findMoonPhases, findPlanetConjunctions: findPlanetConjunctions, findMoonConjunctions: findMoonConjunctions, SAN_YUAN: SAN_YUAN, findMoonCloseApproaches: findMoonCloseApproaches, findStarOccultations: findStarOccultations, findLunarOccultations: findLunarOccultations, BRIGHT_ECLIPTIC_STARS: BRIGHT_ECLIPTIC_STARS, HELP_ITEMS: HELP_ITEMS };";
 vm.runInContext(src, ctx);
-const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS, findOppositions, findElongations, findMoonPhases, findPlanetConjunctions, findMoonConjunctions, SAN_YUAN, findMoonCloseApproaches, findStarOccultations, findLunarOccultations, BRIGHT_ECLIPTIC_STARS } = ctx.__x;
+const { DWARFS, HALLEY, TOURS, PROBES, STAR_LIFE, EXOSYSTEMS, COMETS_EXTRA, PLANETS, CONSTELLATIONS, ASTRO_EVENTS, EXTRA_QUIZ, ZODIAC_SIGNS, MOON_FEATURES, CONSTELLATION_MYTHS, METEOR_SHOWERS, DEEPSKY, OBSERVATORIES, CONST_MANSIONS, findOppositions, findElongations, findMoonPhases, findPlanetConjunctions, findMoonConjunctions, SAN_YUAN, findMoonCloseApproaches, findStarOccultations, findLunarOccultations, BRIGHT_ECLIPTIC_STARS, HELP_ITEMS } = ctx.__x;
 
 const D2R = Math.PI / 180;
 const TAU = Math.PI * 2;
@@ -77,7 +77,7 @@ check('阋神星周期 [年]', eris.periodDays / 365.25, 559, 3);
 
 /* 课程数据完整性：7 课，每课有徽章/测验，测验答案索引合法 */
 console.log('\n漫游课程数据检查：');
-check('课程数量', TOURS.length, 9, 0);
+check('课程数量', TOURS.length, 10, 0);
 TOURS.forEach(t => {
   const ok = t.badge && t.quiz.length >= 2 &&
     t.quiz.every(q => q.answer >= 0 && q.answer < q.options.length) &&
@@ -743,6 +743,27 @@ console.log('v24.1 系统切换标签残留修复：');
   const ui = fs.readFileSync(__dirname + '/../js/solar-ui.js', 'utf8');
   check('setSystem 立即刷新标签', ui.indexOf('SolarApp.tickOnce()') > 0 ? 1 : 0, 1, 0);
   check('切换链路调试参数', mn.indexOf('syscycle') > 0 ? 1 : 0, 1, 0);
+}
+
+console.log('v25 主导开发轮：深空课 + 导航 + 修复：');
+{
+  const mt10 = TOURS.find(t => t.id === 'dskytravel');
+  check('第10课 深空旅行者', mt10 ? 1 : 0, 1, 0);
+  check('新课 5 步 3 题 徽章', mt10 && mt10.steps.length === 5 && mt10.quiz.length === 3 && mt10.badge.id === 'dsky' ? 1 : 0, 1, 0);
+  check('课程 dsky 键与深空表可匹配', mt10 && mt10.steps.every(function (s) { return DEEPSKY.some(function (d) { return d.e.split(String.fromCharCode(183))[0].trim().toLowerCase() === s.cam.dsky; }); }) ? 1 : 0, 1, 0);
+  const cs = fs.readFileSync(__dirname + '/../js/cosmos.js', 'utf8');
+  check('退宇宙尊重标签开关', cs.indexOf('state.showLabels') > 0 ? 1 : 0, 1, 0);
+  check('切系统硬退宇宙', cs.indexOf('function hardReset') > 0 && cs.indexOf('hardReset: hardReset') > 0 ? 1 : 0, 1, 0);
+  check('宇宙级别点按导航', cs.indexOf('cosmos-dots') > 0 ? 1 : 0, 1, 0);
+  const ui = fs.readFileSync(__dirname + '/../js/solar-ui.js', 'utf8');
+  check('setSystem 挂 hardReset', ui.indexOf('CosmosLab.hardReset()') > 0 ? 1 : 0, 1, 0);
+  const tw = fs.readFileSync(__dirname + '/../js/tours.js', 'utf8');
+  check('TourEngine dsky 运镜', tw.indexOf('dskyPos') > 0 && tw.indexOf('tourRestoreConst') > 0 ? 1 : 0, 1, 0);
+  const kn = fs.readFileSync(__dirname + '/../js/constellation.js', 'utf8');
+  check('StarMap 导出 dskyPos', kn.indexOf('function dskyPos') > 0 ? 1 : 0, 1, 0);
+  check('帮助含宇宙/沉浸/入口说明', typeof HELP_ITEMS !== "undefined" && HELP_ITEMS.length >= 12 ? 1 : 0, 1, 0);
+  const ii = fs.readFileSync(__dirname + '/../js/i18n.js', 'utf8');
+  check('EN 宇宙/新课覆盖', ii.indexOf('cosmos: {') > 0 && ii.indexOf('dskytravel: {') > 0 ? 1 : 0, 1, 0);
 }
 
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');
