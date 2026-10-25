@@ -59,7 +59,42 @@
     const r = Math.hypot(gx, gy, gz);
     return { lon: Math.atan2(gy, gx), lat: Math.asin(gz / r) };
   }
-  /* 返回 'ok' 本地可见 / 'day' 白天 / 'low' 地平线下 / null 无观测意义 */
+  /* v27.0 冲日观测指南：升/中天/落 + 最大高度（0.01 天步进扫描，观测点地平） */
+  function riseTransitSet(key, days) {
+    const ob = obsOf();
+    const step = 0.01;
+    let rise = null, set2 = null, maxAlt = -90, maxT = null, prevAlt = null;
+    for (let d = days - 0.35; d <= days + 0.85; d += step) {
+      const ecl = planetEclLonLat(key, d);
+      if (!ecl) return null;
+      const alt = eclToHorizLocal(ecl.lon, ecl.lat, d, ob);
+      if (prevAlt !== null) {
+        if (prevAlt < 0 && alt >= 0 && rise === null) rise = d;
+        if (prevAlt >= 0 && alt < 0) set2 = d;
+      }
+      if (alt > maxAlt) { maxAlt = alt; maxT = d; }
+      prevAlt = alt;
+    }
+    return { rise: rise, set2: set2, transit: maxT, maxAlt: maxAlt };
+  }
+  /* 观测点当地时间（按经度估算时区，与 UT 同显不致误导） */
+  function localHHMM(days) {
+    const ob = obsOf();
+    const ms = Date.UTC(2000, 0, 1, 12) + days * 86400000 + ob.lon / 15 * 3600000;
+    const dt = new Date(ms);
+    return String(dt.getUTCHours()).padStart(2, '0') + ':' + String(dt.getUTCMinutes()).padStart(2, '0');
+  }
+  function obsGuide(o) {
+    const rts = riseTransitSet(o.key, o.days);
+    if (!rts || !rts.transit) return '';
+    const parts = [];
+    if (rts.rise) parts.push(t8('cal.rise', '约 ') + localHHMM(rts.rise) + t8('cal.riseU', ' 升起'));
+    parts.push(localHHMM(rts.transit) + t8('cal.transit', ' 中天（最高 ') + Math.round(rts.maxAlt) + '°）');
+    if (rts.set2) parts.push(localHHMM(rts.set2) + t8('cal.setU', ' 落下'));
+    return '🌃 ' + t8('cal.guideAt', '当晚（观测点当地时）：') + parts.join(' · ');
+  }
+
+  /* 返回 ' + String.fromCharCode(39) + 'ok' + String.fromCharCode(39) + ' 本地可见 / 'day' 白天 / 'low' 地平线下 / null 无观测意义 */
   function observabilityOf(o, days) {
     const ob = obsOf();
     let starEcl = null;
@@ -116,7 +151,8 @@
         hm: hmOf(o.days),
         n: o.name, en: o.en,
         t: t8('cal.oppDesc', '行星、地球和太阳排成一线——整夜可见，距离最近、视面最大。') +
-          ' ' + t8('cal.ut', '时刻') + ' ' + hmOf(o.days) + ' UT'
+          ' ' + t8('cal.ut', '时刻') + ' ' + hmOf(o.days) + ' UT' +
+          (o.days - now < 730 ? ' ' + obsGuide(o) : '')
       });
     });
     // 大距（内行星水/金，±3 年）

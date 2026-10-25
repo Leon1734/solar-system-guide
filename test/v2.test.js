@@ -786,5 +786,18 @@ console.log('v26 卫星家族 + 掩星方位角/时长 + ICS 过滤：');
   check('EN 掩食细节键', ii.indexOf('paIn:') > 0 ? 1 : 0, 1, 0);
 }
 
+console.log('v27 冲日观测指南 + 题库加餐：');
+{
+  const cal = fs.readFileSync(__dirname + '/../js/calendar.js', 'utf8');
+  check('冲日 RST 引擎', cal.indexOf('riseTransitSet') > 0 && cal.indexOf('obsGuide') > 0 && cal.indexOf('localHHMM') > 0 ? 1 : 0, 1, 0);
+  check('RST 返回键名统一 set2', cal.indexOf('set2: set2') > 0 && cal.indexOf('rts.set2') > 0 ? 1 : 0, 1, 0);
+  check('观测指南仅未来2年', cal.indexOf('o.days - now < 730') > 0 ? 1 : 0, 1, 0);
+  check('题库扩至 26+', EXTRA_QUIZ.length >= 26 ? 1 : 0, 1, 0);
+  check('新题答案合法', EXTRA_QUIZ.every(function (q) { return q.answer >= 0 && q.answer < q.options.length; }) ? 1 : 0, 1, 0);
+  const ii = fs.readFileSync(__dirname + '/../js/i18n.js', 'utf8');
+  check('EN 冲日指南键', ii.indexOf('guideAt:') > 0 ? 1 : 0, 1, 0);
+}
+
+
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);
