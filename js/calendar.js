@@ -123,6 +123,73 @@
     if (vis === 'low') return '🔽 ' + t8('cal.visLow', '事件时刻目标在观测点地平线下');
     return '';
   }
+  /* v28.0 掩星城市速查：一阶视差（月地平视差 0.95°）修正月球视方向，
+   * 与目标的本城地平分离 <0.28° 判可见、<0.40° 判擦边 */
+  const _ocT1 = { x: 0, y: 0, z: 0 };
+  function _unitOfEcl(lon, lat, out) {
+    const cl = Math.cos(lat);
+    out.x = cl * Math.cos(lon); out.y = cl * Math.sin(lon); out.z = Math.sin(lat);
+  }
+  function occCityList(o, days) {
+    const R = Math.PI / 180, eps = 23.4393 * R, par = 0.95 * R;
+    let a = null, tEcl = null;
+    if (o.p.indexOf('star-') === 0) {
+      const s = BRIGHT_ECLIPTIC_STARS.find(function (q) { return o.p === 'star-' + q.key; });
+      if (!s) return '';
+      a = { x: 0, y: 0, z: 0 };
+      tEcl = { lon: s.ecl[0] * R, lat: s.ecl[1] * R };
+      _unitOfEcl(s.ecl[0] * R, s.ecl[1] * R, a);
+    } else if (o.p === 'pleiades') {
+      a = { x: 0, y: 0, z: 0 };
+      tEcl = { lon: 59.95 * R, lat: 4.06 * R };
+      _unitOfEcl(59.95 * R, 4.06 * R, a);
+    } else {
+      const e = planetEclLonLat(o.p, days);
+      if (!e) return '';
+      tEcl = { lon: e.lon, lat: e.lat };
+      a = { x: 0, y: 0, z: 0 };
+      _unitOfEcl(e.lon, e.lat, a);
+    }
+    _moonUnit(days, _ocT1);
+    const m = { x: _ocT1.x, y: _ocT1.y, z: _ocT1.z };
+    // 黄道 → 赤道
+    const ce = Math.cos(eps), se = Math.sin(eps);
+    const aeq = { x: a.x, y: a.y * ce - a.z * se, z: a.y * se + a.z * ce };
+    const meq = { x: m.x, y: m.y * ce - m.z * se, z: m.y * se + m.z * ce };
+    let gmst = (280.46061837 + 360.98564736629 * days) % 360;
+    if (gmst < 0) gmst += 360;
+    const gh = gmst * R;
+    const vis = [], graze = [];
+    const sunLon2 = sunEclLonOf(days);
+    OBSERVATORIES.forEach(function (city) {
+      if (!tEcl) return;
+      const cOb = { lat: city.lat, lon: city.lon };
+      if (eclToHorizLocal(tEcl.lon, tEcl.lat, days, cOb) < 5) return; // 目标须在地平线上（留 5° 余量）
+      if (eclToHorizLocal(sunLon2, 0, days, cOb) > -6) return;        // 须为夜间
+      const H = gh + city.lon * R, phi = city.lat * R;
+      const Px = Math.cos(phi) * Math.cos(H), Py = Math.cos(phi) * Math.sin(H), Pz = Math.sin(phi);
+      const dot = Px * meq.x + Py * meq.y + Pz * meq.z;
+      let mx = meq.x - par * (Px - dot * meq.x);
+      let my = meq.y - par * (Py - dot * meq.y);
+      let mz = meq.z - par * (Pz - dot * meq.z);
+      const ml = Math.sqrt(mx * mx + my * my + mz * mz) || 1;
+      mx /= ml; my /= ml; mz /= ml;
+      const cosd = mx * aeq.x + my * aeq.y + mz * aeq.z;
+      const sep = Math.acos(Math.max(-1, Math.min(1, cosd))) / R;
+      if (sep < 0.28) vis.push(city.n);
+      else if (sep < 0.42) graze.push(city.n);
+    });
+    if (!vis.length && !graze.length) return '';
+    let out = '';
+    if (vis.length) {
+      out = '📍 ' + t8('cal.visCities', '可见城市：') + vis.slice(0, 4).join(' · ') + (vis.length > 4 ? ' ' + t8('cal.etAl', '等') : '');
+      if (graze.length) out += '；' + t8('cal.graze', '擦边：') + graze.slice(0, 2).join(' · ');
+    } else if (graze.length) {
+      out = '📍 ' + t8('cal.grazeOnly', '掩食带边缘（擦边）：') + graze.slice(0, 3).join(' · ');
+    }
+    return out;
+  }
+
   /* v26.0 掩食细节：掩入点方位 + 中心线掩食时长（仅地心真掩 sep<0.259°） */
   function paDir(pa) {
     const zh = ['北', '东北', '东', '东南', '南', '西南', '西', '西北'];
@@ -214,7 +281,8 @@
         t: (o.occult
           ? t8('cal.occultStar', '月掩亮星——恒星被月缘掩入/复现，小望远镜可见"星点消失又重现"。' + o.con + '方向，' + o.mag.toFixed(1) + ' 等星。')
           : t8('cal.nearStar', '月亮贴着这颗亮星掠过，肉眼即可见"星月相依"。')) +
-          ' ' + winNote(o.winMin) + ' ' + occDetail(o) + ' ' + t8('cal.ut', '时刻') + ' ' + hmOf(o.days) + ' UT · ' + visNote(vis)
+          ' ' + winNote(o.winMin) + ' ' + occDetail(o) + ' ' + t8('cal.ut', '时刻') + ' ' + hmOf(o.days) + ' UT · ' + visNote(vis) +
+          (o.occult ? ' ' + occCityList(o, o.days) : '')
       });
     });
     // v17 月掩/极近行星 + 月掩昴星团——v19 findLunarOccultations 已覆盖此类事件，跳过避免重复

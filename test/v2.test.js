@@ -799,5 +799,26 @@ console.log('v27 冲日观测指南 + 题库加餐：');
 }
 
 
+console.log('v28 掩星城市可见性：');
+{
+  // 从 calendar.js 提取 occCityList 及其依赖，在 data.js 上下文运行（固定 2026 窗口防时间漂移）
+  const calSrc = fs.readFileSync(__dirname + '/../js/calendar.js', 'utf8');
+  const grab = calSrc.match(/function (obsOf|eclToHorizLocal|sunEclLonOf|planetEclLonLat|_unitOfEcl|occCityList)[\s\S]*?\n  \}/g);
+  check('城市引擎可提取', grab && grab.length >= 6 ? 1 : 0, 1, 0);
+  global.window = {};
+  global.localStorage = { getItem: function () { return JSON.stringify({ lat: 39.90, lon: 116.40 }); } };
+  const ctx = {};
+  const src = fs.readFileSync(__dirname + '/../js/data.js', 'utf8') + ';const _calT={x:0,y:0,z:0};const _ocT1={x:0,y:0,z:0};function helioPos(p,days,out){const v=_oppHelioRates(p,days);out.x=v.x;out.y=v.y;out.z=v.z;return out;}function t8(p2,fb){return fb;}' + grab.join(String.fromCharCode(10)) + ';this.__r=(function(){const n0=(Date.UTC(2026,8,1)-Date.UTC(2000,0,1,12))/86400000;const all=findStarOccultations(n0,n0+200).concat(findLunarOccultations(n0,n0+200)).filter(function(e){return e.occult;});let shown=0;all.forEach(function(e){if(occCityList(e,e.days))shown++;});return {total:all.length,shown:shown};})();';
+  const vmCtx = vm.createContext(ctx);
+  vm.runInContext(src, vmCtx);
+  const res = vmCtx.__r;
+  console.log('   2026.09-2027.03 掩级事件 ' + res.total + ' 个，带城市清单 ' + res.shown + ' 个');
+  check('固定窗口事件数 15+', res.total >= 15 ? 1 : 0, 1, 0);
+  check('城市区分度（部分可见非全部）', res.shown >= 1 && res.shown < res.total ? 1 : 0, 1, 0);
+  check('昼夜+地平过滤存在', calSrc.indexOf('cOb') > 0 && calSrc.indexOf('须为夜间') > 0 ? 1 : 0, 1, 0);
+  check('一阶视差模型', calSrc.indexOf('par = 0.95') > 0 ? 1 : 0, 1, 0);
+}
+
+
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

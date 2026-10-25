@@ -381,6 +381,7 @@ window.I18N = (function () {
       visLow: 'Target below your horizon at event time',
       win: 'separation <1° for ~',
       paIn: 'Ingress point',
+      visCities: 'Visible from: ', etAl: 'etc.', graze: 'grazing: ', grazeOnly: 'Band edge (grazing): ',
       rise: 'rises ~', riseU: '', transit: ' transit (max ', setU: ' sets',
       guideAt: 'That night (site local time): ', dur: 'occultation ~', durU: ' min near the centerline',
       icsVis: 'local-visible events only',
