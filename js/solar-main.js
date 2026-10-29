@@ -225,7 +225,7 @@ const SolarApp = {
 window.SolarApp = SolarApp;
 
 /* ================= 自适应画质（v4.0 C3） ================= */
-let fpsFrames = 0, fpsElapsed = 0, graceElapsed = 0;
+let fpsFrames = 0, fpsElapsed = 0, graceElapsed = 0, goodElapsed = 0;
 function adaptQuality(dt) {
   graceElapsed += dt;
   if (graceElapsed < 8) return; // 启动宽限期（贴图上传会拖慢首几秒）
@@ -233,7 +233,24 @@ function adaptQuality(dt) {
   if (fpsElapsed < 3) return;
   const fps = fpsFrames / fpsElapsed;
   fpsFrames = 0; fpsElapsed = 0;
-  if (fps >= 45) return;
+  if (fps >= 45) {
+    /* v29.0 升回：连续 20s 高帧率逐级恢复（设备负载缓解后自动回到最佳画质） */
+    goodElapsed += fpsElapsed;
+    if (goodElapsed < 20) return;
+    goodElapsed = 0;
+    if (state.quality === 0) {
+      state.quality = 1;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      toast(t8('ui.autoUp1', '✨ 帧率恢复，已提升渲染分辨率'));
+    } else if (state.quality === 1 && !state.bloom && composer) {
+      state.quality = 2;
+      state.bloom = true;
+      $('tg-bloom').checked = true;
+      toast(t8('ui.autoUp2', '✨ 帧率充沛，已恢复辉光特效'));
+    }
+    return;
+  }
+  goodElapsed = 0;
   if (state.quality === 2 && state.bloom && composer) {
     state.quality = 1;
     state.bloom = false;
@@ -254,7 +271,27 @@ function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.1);
   simulate(dt);
+  if (window.__fpsdbg) { if (window.__fpsT1 !== undefined) { } window.__fpsT1 = performance.now(); }
+  if (window.__fpsdbg && window.__fpsT1 !== undefined) { simMs = simMs * 0.9 + (performance.now() - window.__fpsT1) * 0.1; }
   renderFrame(dt);
+  if (window.__fpsdbg) {
+    if (window.__fpsT0) {
+      renMs = renMs * 0.9 + (performance.now() - window.__fpsT0) * 0.1;
+      fpsFrames2++;
+    }
+    window.__fpsT0 = performance.now();
+    if (fpsFrames2 >= 8) {
+      var fp = document.getElementById('fpsdbg-panel');
+      if (!fp) {
+        fp = document.createElement('div');
+        fp.id = 'fpsdbg-panel';
+        fp.style.cssText = 'position:fixed;top:70px;right:12px;z-index:9999;background:rgba(0,0,0,.85);color:#7fe0a0;font:13px monospace;padding:8px 12px;border-radius:8px;pointer-events:none;white-space:pre;line-height:1.6;';
+        document.body.appendChild(fp);
+      }
+      fp.textContent = 'FPS ' + Math.round(1000 / Math.max(1, simMs + renMs)) + String.fromCharCode(10) + 'SIM ' + simMs.toFixed(1) + 'ms' + String.fromCharCode(10) + 'REN ' + renMs.toFixed(1) + 'ms' + String.fromCharCode(10) + 'Q' + state.quality + ' PR' + (renderer.getPixelRatio() * 100).toFixed(0) + '%';
+      fpsFrames2 = 0;
+    }
+  }
   adaptQuality(dt);
 }
 
@@ -371,6 +408,8 @@ window.addEventListener('resize', function () {
 loadPrefs();
 setSpeed(state.speed);
 const tourParam = applyUrlParams();
+if (new URLSearchParams(location.search).get('fpsdbg') === '1') window.__fpsdbg = true;
+var simMs = 0, renMs = 0, fpsFrames2 = 0;
 if (new URLSearchParams(location.search).get('camdbg') === '1') window.__camdbg = true;
 const cosmosParam = parseInt(new URLSearchParams(location.search).get('cosmos') || '0', 10);
 if (cosmosParam >= 1) {

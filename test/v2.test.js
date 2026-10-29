@@ -820,5 +820,18 @@ console.log('v28 掩星城市可见性：');
 }
 
 
+console.log('v29 性能分档 + 月相刻度盘：');
+{
+  const mn = fs.readFileSync(__dirname + '/../js/solar-main.js', 'utf8');
+  check('fpsdbg 取证面板', mn.indexOf('fpsdbg-panel') > 0 && mn.indexOf('__fpsdbg') > 0 ? 1 : 0, 1, 0);
+  check('画质自动升回', mn.indexOf('goodElapsed') > 0 && mn.indexOf('autoUp1') > 0 ? 1 : 0, 1, 0);
+  const cs = fs.readFileSync(__dirname + '/../js/cosmos.js', 'utf8');
+  check('cosmos 粒子随画质分档', cs.indexOf('densK') > 0 && cs.indexOf('14000 * densK()') > 0 ? 1 : 0, 1, 0);
+  const mp = fs.readFileSync(__dirname + '/../js/moonphase.js', 'utf8');
+  check('月相刻度盘', mp.indexOf('drawDial') > 0 && mp.indexOf('29.53') > 0 ? 1 : 0, 1, 0);
+  const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
+  check('缓存号 v33', html.indexOf('?v=33') > 0 ? 1 : 0, 1, 0);
+}
+
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

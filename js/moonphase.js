@@ -109,6 +109,47 @@ window.MoonLab = (function () {
     ctx.fill();
   }
 
+  /* v29.0 月相刻度盘：29.53 天周期环 + 当前月龄指针（右栏） */
+  function drawDial(ph) {
+    const cx = 616, cy = 300, r = 44;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(120,150,210,0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.stroke();
+    // 4 主相位 emoji 刻度（朔/上弦/望/下弦）
+    ctx.fillStyle = '#8fa0b8'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('🌑', cx, cy - r - 6);
+    ctx.fillText('🌓', cx + r + 13, cy + 4);
+    ctx.fillText('🌕', cx, cy + r + 18);
+    ctx.fillText('🌒', cx - r - 13, cy + 4);
+    // 32 分小刻度（主刻度加长）
+    ctx.strokeStyle = 'rgba(140,170,220,0.4)'; ctx.lineWidth = 1;
+    for (let i = 0; i < 32; i++) {
+      const a = i / 32 * 6.283 - Math.PI / 2;
+      const r1 = r - (i % 8 === 0 ? 7 : 3);
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+      ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+      ctx.stroke();
+    }
+    // 指针：朔起顺时针，age 0~29.53 天
+    const ang = ph.age / 29.53 * 6.283 - Math.PI / 2;
+    ctx.strokeStyle = '#ffd88a'; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(ang) * (r - 9), cy + Math.sin(ang) * (r - 9));
+    ctx.stroke();
+    ctx.fillStyle = '#ffd88a';
+    ctx.beginPath(); ctx.arc(cx + Math.cos(ang) * (r - 9), cy + Math.sin(ang) * (r - 9), 3.4, 0, 6.283); ctx.fill();
+    ctx.fillStyle = '#e8e6df';
+    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, 6.283); ctx.fill();
+    // 中央月龄数字
+    ctx.fillStyle = '#c4d2ea'; ctx.font = 'bold 12px sans-serif';
+    ctx.fillText(ph.age.toFixed(1), cx, cy + 4);
+    ctx.font = '9.5px sans-serif'; ctx.fillStyle = '#5a6a88';
+    ctx.fillText('day', cx, cy + 16);
+    ctx.textAlign = 'left';
+    ctx.restore();
+  }
   /* v20.0 布局：左窗 WebGL 3D 月球（moon3d.js），右栏信息 + 成因几何图 */
   const WX = 186, WY = 228, WR = 148; // 3D 窗口（与 moon3d-canvas 定位严格一致）
 
@@ -168,6 +209,8 @@ window.MoonLab = (function () {
     ctx.fillStyle = '#8fa0b8'; ctx.font = '12px sans-serif';
     ctx.fillText(t8('moon.law', '月相 = 月球绕地球转、被阳光照亮的半面朝向我们的角度不同').slice(0, 26), 368, 130);
     ctx.fillText(t8('moon.law', '月相 = 月球绕地球转、被阳光照亮的半面朝向我们的角度不同').slice(26), 368, 148);
+
+    drawDial(ph);
 
     drawGeometry(ph);
 

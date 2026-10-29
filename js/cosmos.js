@@ -206,8 +206,8 @@ window.CosmosLab = (function () {
   }
   function buildL1() {
     const g = new THREE.Group(); g.position.set(0, Y1, 0); g.visible = false;
-    g.add(starShell(3200, 2600));
-    g.add(spiralGalaxy(380, 14000, 0xd2daff));
+    g.add(starShell(3200, Math.round(2600 * densK())));
+    g.add(spiralGalaxy(380, Math.round(14000 * densK()), 0xd2daff));
     // 太阳位置（猎户臂，约 0.62 半径处）
     const sunPos = new THREE.Vector3(96, 3, 158);
     addMarker(g, markerSets, 1, sunPos, 0xffd88a, 9, {
@@ -267,7 +267,7 @@ window.CosmosLab = (function () {
   }
   function buildL3() {
     const g = new THREE.Group(); g.position.set(0, Y3, 0); g.visible = false;
-    g.add(starShell(3600, 3000));
+    g.add(starShell(3600, Math.round(3000 * densK())));
     g.add(cosmicWeb(820));
     addMarker(g, markerSets, 3, new THREE.Vector3(0, 0, 0), 0xffc8a0, 13, {
       n: '拉尼亚凯亚超星系团', en: 'Laniakea Supercluster', icon: '🕸',
@@ -284,6 +284,7 @@ window.CosmosLab = (function () {
     scene.add(g); return g;
   }
 
+    function densK() { return (window.__solar && __solar.state.quality === 0) ? 0.5 : 1; } // v29.0 最低画质粒子减半
   function build() {
     if (built) return;
     groups = [buildL1(), buildL2(), buildL3()];
