@@ -5,6 +5,26 @@
 if (window.SolarOK === false) { window.__abortQuiet = true; throw new Error('solar boot aborted'); }
 
 /* ================= 选中 / 跟随 / 信息面板 ================= */
+/* v31.0 顶栏每日一题连击角标（🔥xN，≥3 显示） */
+function updateQuizStreakBadge() {
+  const btn = $('btn-quiz');
+  if (!btn) return;
+  let s = { cur: 0 };
+  try { s = JSON.parse(localStorage.getItem('solar_streak_v1') || '{"cur":0}'); } catch (e) { }
+  let b = btn.querySelector('.quiz-streak');
+  if (s.cur >= 3) {
+    if (!b) {
+      b = document.createElement('span');
+      b.className = 'quiz-streak';
+      btn.appendChild(b);
+    }
+    b.textContent = '🔥' + s.cur;
+  } else if (b) {
+    b.remove();
+  }
+}
+setInterval(updateQuizStreakBadge, 2000);
+
 function findByKey(key) {
   return activeList().find(function (b) { return b.data.key === key; }) ||
     bodies.find(function (b) { return b.data.key === key; });

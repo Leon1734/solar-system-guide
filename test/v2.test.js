@@ -830,7 +830,10 @@ console.log('v29 性能分档 + 月相刻度盘：');
   const mp = fs.readFileSync(__dirname + '/../js/moonphase.js', 'utf8');
   check('月相刻度盘', mp.indexOf('drawDial') > 0 && mp.indexOf('29.53') > 0 ? 1 : 0, 1, 0);
   const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
-  check('缓存号与 SW 同步（v34）', html.indexOf('?v=34') > 0 ? 1 : 0, 1, 0);
+  const vCur = (html.match(/\?v=\d+/) || [''])[0];
+  const swSrc = fs.readFileSync(__dirname + '/../sw.js', 'utf8');
+  const swV = (swSrc.match(/solar-guide-v\d+/) || [''])[0];
+  check('缓存号三层同步', vCur === '?v=' + swV.slice(13) && vCur !== '' ? 1 : 0, 1, 0);
 }
 
 console.log('v30 错题本：');
@@ -862,6 +865,31 @@ console.log('v30 错题本：');
   check('双模式与销账逻辑', qd.indexOf("mode === 'wrong'") > 0 && qd.indexOf('removeWrong') > 0 ? 1 : 0, 1, 0);
   const ii = fs.readFileSync(__dirname + '/../js/i18n.js', 'utf8');
   check('EN 错题本键', ii.indexOf('wbTab:') > 0 ? 1 : 0, 1, 0);
+}
+
+console.log('v31 答题连击：');
+{
+  const store2 = {};
+  const vmCtx2 = vm.createContext({
+    window: { addEventListener: function () { } },
+    document: { readyState: 'complete', addEventListener: function () { }, getElementById: function () { return { addEventListener: function () { }, classList: { contains: function () { return true; } } }; } },
+    localStorage: { getItem: function (k) { return store2[k] || null; }, setItem: function (k, v) { store2[k] = v; } },
+    TOURS: TOURS, EXTRA_QUIZ: EXTRA_QUIZ
+  });
+  const qsrc2 = fs.readFileSync(__dirname + '/../js/quizdaily.js', 'utf8')
+    + ';this.__api2=window.QuizDaily;';
+  vm.runInContext(qsrc2, vmCtx2);
+  const api2 = vmCtx2.__api2;
+  let s = api2.bumpStreak(true); s = api2.bumpStreak(true);
+  check('连击累计', s.cur === 2 && s.best === 2 ? 1 : 0, 1, 0);
+  s = api2.bumpStreak(false);
+  check('答错清零且最佳保留', s.cur === 0 && s.best === 2 ? 1 : 0, 1, 0);
+  for (let i = 0; i < 4; i++) s = api2.bumpStreak(true);
+  check('新连击与最佳更新', s.cur === 4 && s.best === 4 ? 1 : 0, 1, 0);
+  const qd = fs.readFileSync(__dirname + '/../js/quizdaily.js', 'utf8');
+  check('里程碑 toast（5/10/20）', qd.indexOf('st.cur === 5') > 0 ? 1 : 0, 1, 0);
+  const ui = fs.readFileSync(__dirname + '/../js/solar-ui.js', 'utf8');
+  check('顶栏连击角标', ui.indexOf('quiz-streak') > 0 && ui.indexOf('updateQuizStreakBadge') > 0 ? 1 : 0, 1, 0);
 }
 
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');

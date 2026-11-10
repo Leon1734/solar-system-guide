@@ -741,3 +741,12 @@ body.zen #fact-ticker { display: none; }
 .qd-tab.warn { background: rgba(120, 50, 40, 0.6); color: #f0c0b0; border-color: rgba(255, 150, 130, 0.4); }
 .qd-tab:disabled { opacity: 0.45; cursor: default; }
 .quiz-src { font-size: 12px; color: #9fd8ff; margin-bottom: 6px; }
+
+/* ===== v31.0 连击角标 ===== */
+#btn-quiz { position: relative; }
+.quiz-streak {
+  position: absolute; top: -7px; right: -5px;
+  font-size: 10px; background: rgba(140, 60, 20, 0.9);
+  color: #ffd0a0; padding: 1px 5px; border-radius: 8px;
+  border: 1px solid rgba(255, 160, 90, 0.5);
+}

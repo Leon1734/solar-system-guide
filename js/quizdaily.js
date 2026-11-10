@@ -9,6 +9,7 @@ window.QuizDaily = (function () {
   const $ = function (id) { return document.getElementById(id); };
   const KEY = 'solar_points_v1';
   const WB_KEY = 'solar_wrongbook_v1';
+  const ST_KEY = 'solar_streak_v1';
   let current = null;
   let mode = 'random'; // v30.0 'random' 随机出题 | 'wrong' 错题重练
 
@@ -20,6 +21,29 @@ window.QuizDaily = (function () {
   function addPoint() {
     try { localStorage.setItem(KEY, String(points() + 1)); } catch (e) { }
   }
+  /* ---------- v31.0 答题连击（连续答对计数，答错清零） ---------- */
+  function streak() {
+    try { return JSON.parse(localStorage.getItem(ST_KEY) || '{"cur":0,"best":0}'); } catch (e) { return { cur: 0, best: 0 }; }
+  }
+  function saveStreak(s) {
+    try { localStorage.setItem(ST_KEY, JSON.stringify(s)); } catch (e) { }
+  }
+  function bumpStreak(right) {
+    const s = streak();
+    if (right) {
+      s.cur += 1;
+      if (s.cur > s.best) s.best = s.cur;
+    } else {
+      s.cur = 0;
+    }
+    saveStreak(s);
+    return s;
+  }
+  function streakBadge() {
+    const s = streak();
+    return s.cur >= 3 ? '🔥' + s.cur : '';
+  }
+
   /* ---------- v30.0 错题本（核心三函数，可测试） ---------- */
   function wrongBook() {
     try { return JSON.parse(localStorage.getItem(WB_KEY) || '[]') || []; } catch (e) { return []; }
@@ -42,7 +66,8 @@ window.QuizDaily = (function () {
     saveWB(wrongBook().filter(function (w) { return w.q !== qText; }));
   }
   function renderPoints() {
-    $('qd-points').textContent = '⭐ ' + points();
+    const s = streak();
+    $('qd-points').textContent = '⭐ ' + points() + (s.cur >= 2 ? ' 🔥' + s.cur : '') + ' 🏆' + s.best;
     const t = $('qd-wb-count');
     if (t) t.textContent = '📖 ' + t8('qd.wbTab', '错题重练') + ' (' + wrongBook().length + ')';
   }
@@ -87,6 +112,7 @@ window.QuizDaily = (function () {
       btn.addEventListener('click', function () {
         const pick = +this.dataset.i;
         const right = pick === q.answer;
+        const st = bumpStreak(right);
         if (right) {
           addPoint();
           if (fromWB) removeWrong(q.q); // v30.0 销账
@@ -100,7 +126,11 @@ window.QuizDaily = (function () {
         });
         const fb = document.createElement('div');
         fb.className = 'quiz-feedback ' + (right ? 'ok' : 'no');
-        fb.textContent = (right ? (en ? '⭐ +1 · Correct! ' : '⭐ 积分 +1 · 答对了！')
+        const streakTxt = right && st.cur >= 3 ? (en ? ' 🔥 x' + st.cur + ' streak!' : ' 🔥 ' + st.cur + ' 连击！') : '';
+        if (right && (st.cur === 5 || st.cur === 10 || st.cur === 20)) {
+          toast('🔥 ' + (en ? 'Streak x' + st.cur + ' — on fire!' : '连击 x' + st.cur + ' —— 状态火热！'));
+        }
+        fb.textContent = (right ? (en ? '⭐ +1 · Correct! ' : '⭐ 积分 +1 · 答对了！') + streakTxt
           : (en ? '❌ The answer is ' + String.fromCharCode(65 + q.answer) + '. ' : '❌ 正确答案是 ' + String.fromCharCode(65 + q.answer) + '。')) + ' ' + q.explain;
         box.appendChild(fb);
         renderPoints();
@@ -143,5 +173,5 @@ window.QuizDaily = (function () {
     bind();
   }
 
-  return { start: start, wrongBook: wrongBook, addWrong: addWrong, removeWrong: removeWrong };
+  return { start: start, wrongBook: wrongBook, addWrong: addWrong, removeWrong: removeWrong, bumpStreak: bumpStreak, streak: streak };
 })();
