@@ -402,7 +402,8 @@ window.I18N = (function () {
       theater: '🌗 3D Phase Theatre · drag to rotate the Moon',
       theater2d: '🌗 Moon Telescope · 2D mode (WebGL unavailable)'
     },
-    qd: { title: '🎲 Daily Question', sub: 'One random question from the whole pool — ⭐ points stack up', next: 'Next ▶' },
+    qd: { title: '🎲 Daily Question', sub: 'One random question from the whole pool — ⭐ points stack up', next: 'Next ▶',
+      randomTab: '🎲 Random', wbTab: 'Wrong-book', wbClear: 'Clear', wbCleared: '🗑 Wrong-book cleared — fresh start!', fromWB: '📖 Wrong-book replay — answer right to clear it' },
     tl: { hint: 'Drag to travel ±100 years · dots are calendar events' },
     gr: {
       left: 'Planet frame: gravity bends v∞ by a turn angle',

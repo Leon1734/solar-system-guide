@@ -830,7 +830,38 @@ console.log('v29 性能分档 + 月相刻度盘：');
   const mp = fs.readFileSync(__dirname + '/../js/moonphase.js', 'utf8');
   check('月相刻度盘', mp.indexOf('drawDial') > 0 && mp.indexOf('29.53') > 0 ? 1 : 0, 1, 0);
   const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
-  check('缓存号 v33', html.indexOf('?v=33') > 0 ? 1 : 0, 1, 0);
+  check('缓存号与 SW 同步（v34）', html.indexOf('?v=34') > 0 ? 1 : 0, 1, 0);
+}
+
+console.log('v30 错题本：');
+{
+  // vm 沙盒实测错题本核心三函数（mock localStorage）
+  const store = {};
+  const vmCtx = vm.createContext({
+    window: { addEventListener: function () { } },
+    document: { readyState: 'complete', addEventListener: function () { }, getElementById: function () { return { addEventListener: function () { }, classList: { contains: function () { return true; } } }; } },
+    localStorage: { getItem: k => store[k] || null, setItem: (k, v) => { store[k] = v; } },
+    TOURS: TOURS, EXTRA_QUIZ: EXTRA_QUIZ
+  });
+  const qsrc = fs.readFileSync(__dirname + '/../js/quizdaily.js', 'utf8')
+    + ';this.__api=window.QuizDaily;';
+  vm.runInContext(qsrc, vmCtx);
+  const api = vmCtx.__api;
+  const probe = EXTRA_QUIZ[0];
+  api.addWrong(probe, (probe.answer + 1) % probe.options.length);
+  api.addWrong(probe, (probe.answer + 1) % probe.options.length); // 重复答错 → 去重
+  const wb1 = api.wrongBook();
+  check('答错入册且按题干去重', wb1.length === 1 && wb1[0].q === probe.q && wb1[0].picked !== probe.answer ? 1 : 0, 1, 0);
+  check('入册记录正确答案与解析', wb1[0].answer === probe.answer && wb1[0].explain === probe.explain ? 1 : 0, 1, 0);
+  api.removeWrong(probe.q);
+  check('重练答对销账', api.wrongBook().length === 0 ? 1 : 0, 1, 0);
+  // UI 挂载
+  const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
+  check('错题本 tabs 挂载', html.indexOf('qd-tabs') > 0 ? 1 : 0, 1, 0);
+  const qd = fs.readFileSync(__dirname + '/../js/quizdaily.js', 'utf8');
+  check('双模式与销账逻辑', qd.indexOf("mode === 'wrong'") > 0 && qd.indexOf('removeWrong') > 0 ? 1 : 0, 1, 0);
+  const ii = fs.readFileSync(__dirname + '/../js/i18n.js', 'utf8');
+  check('EN 错题本键', ii.indexOf('wbTab:') > 0 ? 1 : 0, 1, 0);
 }
 
 console.log('\n结果: ' + pass + ' 通过, ' + fail + ' 失败');
